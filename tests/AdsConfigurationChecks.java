@@ -43,6 +43,12 @@ public class AdsConfigurationChecks {
         bad=fixture();bad.getJSONArray("placements").getJSONObject(0).put("id","app_open");rejected(bad);
         bad=fixture();bad.getJSONArray("placements").getJSONObject(0).put("enabled",false).put("ad_unit_id","");
         require(!AdsConfiguration.Companion.parse(bad).getPlacements().get("home_banner").getEnabled());
-        System.out.println("Ads configuration parser: valid five-network model and 11 rejection cases passed");
+        var backed=fixture();backed.getJSONArray("placements").getJSONObject(0).put("fallback_network","meta").put("fallback_ad_unit_id","ca-app-pub-1234567890123456/1234567891");
+        backed.put("export_rules",new JSONObject().put("offer_reward",true).put("resolutions",new JSONArray("[480,1080,2000]")));
+        var routed=AdsConfiguration.Companion.parse(backed);require(routed.getOfferExportReward());require(routed.getRewardedResolutions().contains(1080));require(routed.getPlacements().get("home_banner").getFallbackNetwork().equals("meta"));
+        var badBackup=new JSONObject(backed.toString());badBackup.getJSONArray("placements").getJSONObject(0).put("fallback_network","ironsource");rejected(badBackup);
+        badBackup=new JSONObject(backed.toString());badBackup.getJSONArray("placements").getJSONObject(0).put("fallback_ad_unit_id","bad-id");rejected(badBackup);
+        badBackup=new JSONObject(backed.toString());badBackup.getJSONObject("export_rules").put("resolutions",new JSONArray("[999]"));rejected(badBackup);
+        System.out.println("Ads configuration parser: five-network model, export rules, backup route and 14 rejection cases passed");
     }
 }

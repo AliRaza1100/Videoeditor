@@ -39,7 +39,8 @@ object AdsController {
     }
     fun banner(slot: AdBannerSlot) { listeners.removeAll { it.get()==null || it.get()===slot }; listeners.add(WeakReference(slot)); slot.reload() }
     fun detached(slot: AdBannerSlot) { listeners.removeAll { it.get()==null || it.get()===slot }; AdsRuntime.destroyBanner(slot) }
-    fun available(id: String) = sdkEnabled && configuration()?.let { it.enabled && it.placements[id]?.enabled == true } == true
+    fun available(id: String) = sdkEnabled && AdsRuntime.available(id)
+    fun offerExportReward(resolution: Int) = configuration()?.let { it.offerExportReward && resolution in it.rewardedResolutions && available("export_reward") }==true
     fun afterExport(activity: Activity, stillVisible: () -> Boolean) = AdsRuntime.afterExport(activity, stillVisible)
     fun reward(activity: Activity, id: String, done: (Boolean) -> Unit) = AdsRuntime.reward(activity, id, done)
     fun privacy(activity: Activity) = AdsRuntime.privacy(activity)

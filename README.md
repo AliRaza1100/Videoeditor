@@ -19,7 +19,7 @@ git clone --branch backend https://github.com/AliRaza1100/Videoeditor.git lumen-
 
 ## Android app
 
-Current testing source: version 1.15 (version code 16), package `com.lumen.studio`.
+Current testing source: version 1.16 (version code 17), package `com.lumen.studio`.
 Requires JDK 17+, Android SDK 36 and Android 8.0+ devices. Kotlin 2.3.10,
 Android Gradle Plugin 8.13.2, Media3 1.8.0. Set your local Android SDK path in
 `local.properties` or your environment; that machine-specific file is not committed.
@@ -68,3 +68,5 @@ replaced before publishing. APK signing keys are configured privately using the
 release helper. Source/API compilation and configuration tests passed; real-device
 advertising, partner account readiness and production publishing require validation.
 No license has been selected; no open-source license is implied.
+
+Latest source: optional pre-export rewards at admin-selected resolutions, real 1080p, same-format backup routes and Hostinger deployment guidance in `docs/HOSTINGER-DEPLOYMENT.md`. This requires a new app build; the prior 1.15 APK is unchanged.

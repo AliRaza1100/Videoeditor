@@ -4,6 +4,7 @@ import android.app.Activity
 
 /** The offline edition never links, initializes or requests an advertising SDK. */
 internal object AdsRuntime {
+    fun available(id: String) = false
     fun start(activity: Activity) = Unit
     fun banner(slot: AdBannerSlot) = Unit
     fun destroyBanner(slot: AdBannerSlot) = Unit

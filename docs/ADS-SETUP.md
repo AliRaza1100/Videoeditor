@@ -1,3 +1,7 @@
+# Export rules, backups and deployment update
+
+See [HOSTINGER-DEPLOYMENT.md](HOSTINGER-DEPLOYMENT.md) for deployment files and the current pre-export flow. The update adds admin-selected export resolutions (including real 1080p), optional pre-export rewards and explicit primary/backup routes. It supersedes older statements below about adding these features later. The previously distributed 1.15 APK does not contain this update.
+
 # Advertising setup — Lumen Studio
 
 This supersedes the older launch-pack statements that all advertising work is only a plan. Source now includes an optional, real SDK integration. Previously distributed APKs remain SDK-free. No live network account or successful device ad impression has been verified.

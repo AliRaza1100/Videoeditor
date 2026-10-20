@@ -51,7 +51,7 @@
     },
     {
       "title": "Advertising choices and optional rewards",
-      "body": "Where required, a Google User Messaging Platform form collects privacy choices before ad requests. Required advertising privacy options can be reopened from Settings. Google ad requests are restricted to non-personalized ads; partner data practices and consent settings still apply. A voluntary rewarded ad pauses further ad requests for 30 minutes in the current app session only after the network reports the reward. Dismissing or declining an ad leaves normal editing and exporting available. Ad availability is not guaranteed. Existing ads can remain visible while a request or privacy update is being processed."
+      "body": "Where required, a Google User Messaging Platform form collects privacy choices before ad requests. Required advertising privacy options can be reopened from Settings. Google ad requests are restricted to non-personalized ads; partner data practices and consent settings still apply. A voluntary rewarded ad pauses further ad requests for 30 minutes in the current app session only after the network reports the reward. Dismissing or declining an ad leaves normal editing and exporting available. Ad availability is not guaranteed. Existing ads can remain visible while a request or privacy update is being processed. The administrator can offer this optional reward before selected video export resolutions. Export normally remains available for every resolution, including when an ad cannot load or is skipped. Configured same-format backup advertising routes may be tried after a no-fill or network error; no ad or reward availability is guaranteed."
     },
     {
       "title": "Configuration delivery diagnostics",

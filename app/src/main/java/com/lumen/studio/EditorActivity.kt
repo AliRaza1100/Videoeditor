@@ -86,6 +86,7 @@ class EditorActivity : BaseActivity() {
     private var preparing=false
     private var resumePreview=false
     private var currentTab=""
+    private var exportAfterReward=false
     private var exportResolution=720
     private var pendingExport: EditorState?=null
     private var pendingImage: Bitmap?=null
@@ -1242,12 +1243,34 @@ class EditorActivity : BaseActivity() {
     @Suppress("DEPRECATION") private fun exportMenu() {
         pause(); if(state.clips.isEmpty() || preparing || VideoExport.busy) return
         val previewReward=AdsController.available("preview_reward")
-        topExportChoices("Export resolution",listOf("360p","480p","720p","1020p","2000p")+if(previewReward) listOf("Watch ad · pause ads for 30 minutes") else emptyList()) { index ->
+        topExportChoices("Export resolution",listOf("360p","480p","720p","1080p","2000p")+if(previewReward) listOf("Watch ad · pause ads for 30 minutes") else emptyList()) { index ->
             if(index==5) {
                 AdsController.reward(this,"preview_reward") { earned -> if(!isDestroyed) Toast.makeText(this,if(earned) "Ads paused for 30 minutes in this session" else "No reward earned. All editing and export options remain available.",Toast.LENGTH_LONG).show() }
                 return@topExportChoices
             }
-            exportResolution=listOf(360,480,720,1020,2000)[index]
+            exportResolution=listOf(360,480,720,1080,2000)[index]
+            if(AdsController.offerExportReward(exportResolution)) {
+                AppDialog(this).setTitle("${exportResolution}p export")
+                    .setMessage("Watch an optional ad to pause ads for 30 minutes in this session, or export normally without the reward.")
+                    .setNegativeButton("Export normally") { _,_ -> chooseExportDestination() }
+                    .setNeutralButton("Back",null)
+                    .setPositiveButton("Watch ad & export") { _,_ ->
+                        AdsController.reward(this,"export_reward") { earned ->
+                            if(!isDestroyed && !isFinishing) {
+                                Toast.makeText(this,if(earned) "Ads paused for 30 minutes" else "No reward earned. You can still export normally.",Toast.LENGTH_LONG).show()
+                                exportAfterReward=true
+                                window.decorView.post { if(hasWindowFocus() && exportAfterReward) { exportAfterReward=false;chooseExportDestination() } }
+                            }
+                        }
+                    }.show()
+            } else chooseExportDestination()
+        }
+    }
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if(hasFocus && exportAfterReward && !isFinishing && !isDestroyed) { exportAfterReward=false;chooseExportDestination() }
+    }
+    @Suppress("DEPRECATION") private fun chooseExportDestination() {
             if(saveDraft()) {
                 closePanel(); pendingExport=state; status.text="Choose where to save your ${exportResolution}p video"
                 startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -1256,7 +1279,6 @@ class EditorActivity : BaseActivity() {
                     putExtra(Intent.EXTRA_TITLE,"Lumen_${exportResolution}p_${System.currentTimeMillis()}.mp4")
                 },701)
             }
-        }
     }
     private fun topExportChoices(title: String,items: List<String>,action: (Int)->Unit) {
         toolsDialog?.dismiss()

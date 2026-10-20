@@ -46,6 +46,18 @@ internal object AdsRuntime {
         val p = c.placements[id] ?: return null
         return if(c.enabled && p.enabled && ready()) c to p else null
     }
+    fun available(id: String) = placement(id)?.let { it.second.type=="banner" || mayShow(it.first) }==true
+    private fun <T> loadWithFallback(activity: Activity,c: AdsConfiguration,p: AdPlacement,
+        load: (String,(T)->Unit,(LoadAdError)->Unit)->Unit,loaded: (T)->Unit,failed: ()->Unit,active: ()->Boolean={true}) {
+        val units=(listOf(unit(p,c))+if(p.fallbackUnit.isNotEmpty()) listOf(unit(p.copy(unit=p.fallbackUnit),c)) else emptyList()).distinct()
+        fun attempt(index: Int) {
+            if(!active()||!alive(activity)||AdsController.configuration()?.version!=c.version||placement(p.id)==null) { failed();return }
+            load(units[index],loaded) { error ->
+                if(error.code in setOf(AdRequest.ERROR_CODE_NO_FILL,AdRequest.ERROR_CODE_NETWORK_ERROR)&&index+1<units.size) attempt(index+1) else failed()
+            }
+        }
+        attempt(0)
+    }
     fun start(activity: Activity) {
         if(!alive(activity) || AdsController.configuration()?.enabled != true) return
         if(initialized) { AdsController.changed(); return }
@@ -77,16 +89,16 @@ internal object AdsRuntime {
             }
         }
     }
-    fun banner(slot: AdBannerSlot) {
+    fun banner(slot: AdBannerSlot,fallbackAttempt: Boolean=false) {
         val pair = placement(slot.placementId)
         val activity = slot.context.activity()
         if(pair == null || activity == null || !alive(activity) || !slot.isAttachedToWindow || activity.resources.configuration.screenWidthDp < 320) { destroyBanner(slot); return }
         val (c,p) = pair
         val key = "${c.version}:${unit(p,c)}"
-        if(banners[slot]?.key == key) return
+        if(!fallbackAttempt && banners[slot]?.key == key) return
         destroyBanner(slot)
         val view = AdView(activity).apply {
-            adUnitId = unit(p,c)
+            adUnitId = unit(if(fallbackAttempt) p.copy(unit=p.fallbackUnit) else p,c)
             // Fixed standard sizes also work with AppLovin waterfall and Unity/ironSource.
             setAdSize(if(activity.resources.configuration.screenWidthDp >= 728) AdSize.LEADERBOARD else AdSize.BANNER)
             adListener = object: AdListener() {
@@ -95,7 +107,11 @@ internal object AdsRuntime {
                     if(slot.isAttachedToWindow && placement(slot.placementId) != null) slot.visibility = View.VISIBLE
                     else destroyBanner(slot)
                 }
-                override fun onAdFailedToLoad(error: LoadAdError) { if(banners[slot]?.view === this@apply) destroyBanner(slot) }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    if(banners[slot]?.view !== this@apply) return
+                    destroyBanner(slot)
+                    if(!fallbackAttempt&&p.fallbackUnit.isNotEmpty()&&AdsController.configuration()?.version==c.version&&error.code in setOf(AdRequest.ERROR_CODE_NO_FILL,AdRequest.ERROR_CODE_NETWORK_ERROR)) banner(slot,true)
+                }
                 override fun onAdImpression() { AdminConnection.event(activity,"ad_impression",p.id) }
             }
         }
@@ -111,10 +127,13 @@ internal object AdsRuntime {
         val (c,p) = placement("export_complete") ?: return
         if(exports % c.everyNExports != 0 || !mayShow(c) || !alive(activity) || !stillVisible()) return
         fullscreenBusy = true
-        InterstitialAd.load(activity,unit(p,c),request(),object: InterstitialAdLoadCallback() {
-            override fun onAdFailedToLoad(error: LoadAdError) { fullscreenBusy = false }
-            override fun onAdLoaded(ad: InterstitialAd) {
-                if(!alive(activity) || !stillVisible() || AdsController.configuration()?.version != c.version || placement(p.id) == null) { fullscreenBusy = false; return }
+        loadWithFallback<InterstitialAd>(activity,c,p,{ id,loaded,failed ->
+            InterstitialAd.load(activity,id,request(),object: InterstitialAdLoadCallback() {
+                override fun onAdFailedToLoad(error: LoadAdError) { failed(error) }
+                override fun onAdLoaded(ad: InterstitialAd) { loaded(ad) }
+            })
+        },{ ad ->
+                if(!alive(activity) || !stillVisible() || AdsController.configuration()?.version != c.version || placement(p.id) == null) { fullscreenBusy = false; return@loadWithFallback }
                 ad.fullScreenContentCallback = object: FullScreenContentCallback() {
                     override fun onAdShowedFullScreenContent() { shown() }
                     override fun onAdImpression() { AdminConnection.event(activity,"ad_impression",p.id) }
@@ -122,27 +141,50 @@ internal object AdsRuntime {
                     override fun onAdFailedToShowFullScreenContent(error: AdError) { fullscreenBusy = false }
                 }
                 ad.show(activity)
-            }
-        })
+        },{ fullscreenBusy=false })
     }
+    @Suppress("DEPRECATION")
     fun reward(activity: Activity, id: String, done: (Boolean) -> Unit) {
         val pair = placement(id)
         if(pair == null || pair.second.type != "rewarded" || !mayShow(pair.first) || !alive(activity)) { done(false); return }
         val (c,p) = pair; fullscreenBusy = true
-        RewardedAd.load(activity,unit(p,c),request(),object: RewardedAdLoadCallback() {
-            override fun onAdFailedToLoad(error: LoadAdError) { fullscreenBusy = false; done(false) }
-            override fun onAdLoaded(ad: RewardedAd) {
-                if(!alive(activity) || !activity.hasWindowFocus() || AdsController.configuration()?.version != c.version || placement(id) == null) { fullscreenBusy = false; done(false); return }
-                var earned = false
-                ad.fullScreenContentCallback = object: FullScreenContentCallback() {
-                    override fun onAdShowedFullScreenContent() { shown() }
-                    override fun onAdImpression() { AdminConnection.event(activity,"ad_impression",p.id) }
-                    override fun onAdDismissedFullScreenContent() { fullscreenBusy = false; done(earned) }
-                    override fun onAdFailedToShowFullScreenContent(error: AdError) { fullscreenBusy = false; done(false) }
+        val handler=android.os.Handler(android.os.Looper.getMainLooper())
+        val loading=android.app.ProgressDialog(activity).apply {
+            setMessage("Loading optional ad… You can continue without the reward.")
+            setCancelable(true);setCanceledOnTouchOutside(false)
+        }
+        var finished=false
+        lateinit var timeout: Runnable
+        fun finish(earned: Boolean) {
+            if(finished)return
+            finished=true;handler.removeCallbacks(timeout);loading.dismiss();fullscreenBusy=false;done(earned)
+        }
+        timeout=Runnable { finish(false) }
+        loading.setButton(android.content.DialogInterface.BUTTON_NEGATIVE,"Export normally") { _,_ -> finish(false) }
+        loading.setOnCancelListener { finish(false) }
+        loading.show();handler.postDelayed(timeout,20_000)
+        loadWithFallback<RewardedAd>(activity,c,p,{ unitId,loaded,failed ->
+            RewardedAd.load(activity,unitId,request(),object: RewardedAdLoadCallback() {
+                override fun onAdFailedToLoad(error: LoadAdError) { failed(error) }
+                override fun onAdLoaded(ad: RewardedAd) { loaded(ad) }
+            })
+        },{ ad ->
+            if(!finished) {
+                handler.removeCallbacks(timeout);loading.dismiss()
+                activity.window.decorView.post {
+                    if(finished)return@post
+                    if(!alive(activity)||!activity.hasWindowFocus()||AdsController.configuration()?.version!=c.version||placement(id)==null) { finish(false);return@post }
+                    var earned=false
+                    ad.fullScreenContentCallback=object: FullScreenContentCallback() {
+                        override fun onAdShowedFullScreenContent() { shown() }
+                        override fun onAdImpression() { AdminConnection.event(activity,"ad_impression",p.id) }
+                        override fun onAdDismissedFullScreenContent() { finish(earned) }
+                        override fun onAdFailedToShowFullScreenContent(error: AdError) { finish(false) }
+                    }
+                    ad.show(activity) { earned=true;adFreeUntil=SystemClock.elapsedRealtime()+30*60_000;AdsController.changed() }
                 }
-                ad.show(activity) { earned = true; adFreeUntil = SystemClock.elapsedRealtime()+30*60_000; AdsController.changed() }
             }
-        })
+        },{ finish(false) },{ !finished })
     }
     private fun launchAd(activity: MainActivity) {
         val (c,p) = placement("app_open") ?: return
