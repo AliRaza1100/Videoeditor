@@ -65,7 +65,7 @@ test('partner routing round-trip, receipt authentication and rollback',async()=>
  const login=await request('/api/admin/login','POST',{email:'owner@example.test',password:'Local-test-password'});cookie=login.cookie.split(';')[0];
  let draft=(await request('/api/admin/config')).data;
  const config=structuredClone(draft.draft);config.network_requests=['admob','meta','ironsource','unity','applovin'];config.ads_enabled=true;
- const p=config.placements[0];p.enabled=true;p.network='ironsource';p.ad_unit_id='ca-app-pub-1234567890123456/1234567890';p.network_ad_units={ironsource:p.ad_unit_id,meta:'ca-app-pub-1234567890123456/1234567891'};
+ const p=config.placements[0];p.enabled=true;p.network='ironsource';p.fallback_network='meta';p.ad_unit_id='ca-app-pub-1234567890123456/1234567890';p.network_ad_units={ironsource:p.ad_unit_id,meta:'ca-app-pub-1234567890123456/1234567891'};
  const invalid=structuredClone(config);invalid.placements[0].network_ad_units.meta='partner-placement-id';
  assert.equal((await request('/api/admin/config','PUT',{revision:draft.revision,config:invalid})).status,400);
  const badOpen=structuredClone(config);badOpen.placements.find(p=>p.id==='app_open').network='meta';
@@ -88,4 +88,31 @@ test('partner routing round-trip, receipt authentication and rollback',async()=>
  await request('/api/app/installation','DELETE',undefined,{token});
  await request('/api/admin/config/rollback','POST',{version:1});
  assert.equal((await request('/api/app/public-config','GET',undefined,{auth:false})).data.ads_enabled,false);
+});
+
+test('export rules and backup network validation',async()=>{
+ const draft=(await request('/api/admin/config')).data;
+ const config=structuredClone(draft.draft);config.export_rules={offer_reward:true,resolutions:[480,1080,2000]};
+ let saved=await request('/api/admin/config','PUT',{revision:draft.revision,config});assert.equal(saved.status,200);
+ await request('/api/admin/config/publish','POST',{revision:saved.data.revision});
+ assert.deepEqual((await request('/api/app/public-config','GET',undefined,{auth:false})).data.export_rules,config.export_rules);
+ const latest=(await request('/api/admin/config')).data;
+ const bad=structuredClone(latest.draft);bad.export_rules.resolutions=[999];
+ assert.equal((await request('/api/admin/config','PUT',{revision:latest.revision,config:bad})).status,400);
+ const missing=structuredClone(latest.draft);missing.ads_enabled=true;missing.placements[0].enabled=true;missing.placements[0].ad_unit_id='ca-app-pub-1234567890123456/1234567890';
+ assert.equal((await request('/api/admin/config','PUT',{revision:latest.revision,config:missing})).status,400);
+ const same=structuredClone(missing);same.placements[0].fallback_network='admob';
+ assert.equal((await request('/api/admin/config','PUT',{revision:latest.revision,config:same})).status,400);
+ await request('/api/admin/config/rollback','POST',{version:1});
+});
+
+test('production origin is pinned behind the proxy',async()=>{
+ const app=createApp({adminEmail:'owner@example.test',adminPassword:'Production-test-password',production:true,publicOrigin:'https://admin.example.test',trustLoopbackProxy:true});
+ await new Promise(resolve=>app.listen(0,'127.0.0.1',resolve));
+ try {
+  const url=`http://127.0.0.1:${app.address().port}/api/admin/login`;
+  const credentials=JSON.stringify({email:'owner@example.test',password:'Production-test-password'});
+  const bad=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://evil.example',Host:'evil.example'},body:credentials});assert.equal(bad.status,403);
+  const good=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://admin.example.test'},body:credentials});assert.equal(good.status,200);assert.ok(good.headers.get('set-cookie').includes('Secure'));
+ } finally { await new Promise(resolve=>app.close(resolve)); }
 });

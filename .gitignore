@@ -15,7 +15,9 @@ signing.properties
 **/node_modules/
 .env
 .env.*
+*.env
 !.env.example
+!*.env.example
 *.sqlite
 *.sqlite-*
 *.db

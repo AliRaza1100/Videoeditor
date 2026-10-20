@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { isIP } from 'node:net';
 import {networks,placementMap} from './ad-catalog.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, createHash, scryptSync, timingSafeEqual } from 'node:crypto';
@@ -22,12 +23,16 @@ const check=(condition,message,status=400)=>{if(!condition) throw new ApiError(s
 const text=(value,min,max,label)=>{check(typeof value==='string' && value.trim().length>=min && value.trim().length<=max,`Invalid ${label}`);return value.trim();};
 const integer=(v,min,max,label)=>{check(Number.isSafeInteger(v)&&v>=min&&v<=max,`Invalid ${label}`);return v;};
 const validId=v=>text(v,36,36,'ID') && check(uuid.test(v),'Invalid installation/message ID');
-function validateConfig(input) {
+function validateConfig(input,requireBackups=true) {
  check(input && typeof input.ads_enabled==='boolean' && typeof input.test_mode==='boolean','Invalid ads switches');
  const requested=input.network_requests ?? ['admob'];
  check(Array.isArray(requested) && requested.length<=networks.length && new Set(requested).size===requested.length && requested.every(id=>networks.some(n=>n.id===id)),'Invalid requested ad networks');
  const result={network_requests:requested,ads_enabled:input.ads_enabled,test_mode:input.test_mode,
   cooldown_seconds:integer(input.cooldown_seconds,60,86400,'cooldown'),max_per_session:integer(input.max_per_session,1,10,'session cap'),every_n_exports:integer(input.every_n_exports,2,100,'export frequency'),placements:[]};
+ const exportRules=input.export_rules??{offer_reward:false,resolutions:[480,1080,2000]};
+ check(typeof exportRules.offer_reward==='boolean'&&Array.isArray(exportRules.resolutions)&&exportRules.resolutions.length<=5&&new Set(exportRules.resolutions).size===exportRules.resolutions.length&&exportRules.resolutions.every(r=>[360,480,720,1080,2000].includes(r)),'Invalid export advertising rules');
+ result.export_rules={offer_reward:exportRules.offer_reward,resolutions:exportRules.resolutions};
+ check(!exportRules.offer_reward||exportRules.resolutions.length>0,'Choose at least one resolution for the export reward offer');
  check(Array.isArray(input.placements)&&input.placements.length===placementDefinitions.length,'All supported placements are required');
  for(const definition of placementDefinitions) {
   const matches=input.placements.filter(p=>p.id===definition.id);check(matches.length===1,'Duplicate/missing placement');const p=matches[0];
@@ -48,12 +53,28 @@ function validateConfig(input) {
    normalized[id]=v;
   }
   normalized[network]=unit;
-  result.placements.push({...definition,enabled:p.enabled,network,network_ad_units:normalized,ad_unit_id:unit});
+  const fallback=p.fallback_network ?? '';
+  check(typeof fallback==='string' && (!fallback||networks.some(n=>n.id===fallback)),'Invalid fallback network');
+  check(!fallback||fallback!==network,'Primary and fallback networks must differ');
+  check(!fallback||definition.type!=='app_open','App-open fallback is handled by the AdMob mediation group');
+  const fallbackUnit=fallback ? normalized[fallback] ?? '' : '';
+  check(!fallback||requested.includes(fallback),'Enable the fallback network first');
+  check(!fallback||fallbackUnit.length>0 && fallbackUnit!==unit,'Fallback requires a different valid mediated AdMob unit');
+  check(!requireBackups||!input.ads_enabled||!p.enabled||definition.type==='app_open'||fallback,'Enabled delivery requires a primary and a backup network route');
+  result.placements.push({...definition,enabled:p.enabled,network,network_ad_units:normalized,ad_unit_id:unit,fallback_network:fallback,fallback_ad_unit_id:fallbackUnit});
  }
+ check(!requireBackups||!result.ads_enabled||!exportRules.offer_reward||result.placements.find(p=>p.id==='export_reward').enabled,'Enable and configure the Export reward placement before enabling export reward offers');
  return result;
 }
 
-export function createApp({databasePath=':memory:',adminEmail,adminPassword,production=false}={}) {
+export function createApp({databasePath=':memory:',adminEmail,adminPassword,production=false,publicOrigin='',trustLoopbackProxy=false}={}) {
+ if(publicOrigin) {const origin=new URL(publicOrigin);check(origin.protocol==='https:'&&origin.origin===publicOrigin,'PUBLIC_ORIGIN must be an HTTPS origin without a trailing slash or path');}
+ const clientAddress=req=>{
+  const remote=req.socket.remoteAddress;
+  const loopback=['127.0.0.1','::1','::ffff:127.0.0.1'].includes(remote);
+  const forwarded=req.headers['x-real-ip'];
+  return trustLoopbackProxy&&loopback&&typeof forwarded==='string'&&isIP(forwarded) ? forwarded : remote;
+ };
  if(databasePath!==':memory:') mkdirSync(dirname(resolve(databasePath)),{recursive:true});
  const db=new DatabaseSync(databasePath);db.exec(readFileSync(join(root,'schema.sql'),'utf8'));
  const get=(sql,...args)=>db.prepare(sql).get(...args);
@@ -102,7 +123,7 @@ export function createApp({databasePath=':memory:',adminEmail,adminPassword,prod
  }
  const send=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
  const audit=(actor,action,detail)=>run('INSERT INTO audit(actor,action,detail,created_at) VALUES(?,?,?,?)',actor,action,detail,now());
- const published=()=>{const row=get('SELECT * FROM config_versions ORDER BY version DESC LIMIT 1');return {schema_version:1,delivery_mode:'admob_mediation',version:row.version,...validateConfig(JSON.parse(row.body)),published_at:row.created_at};};
+ const published=()=>{const row=get('SELECT * FROM config_versions ORDER BY version DESC LIMIT 1');return {schema_version:1,delivery_mode:'admob_mediation',version:row.version,...validateConfig(JSON.parse(row.body),false),published_at:row.created_at};};
  const pageParams=url=>({page:integer(Number(url.searchParams.get('page')||1),1,100000,'page'),limit:25,q:(url.searchParams.get('q')||'').slice(0,100)});
  const ticket=(id,d)=>{const row=get('SELECT * FROM tickets WHERE id=?',id);check(row && (!d || row.device_id===d.id),'Ticket not found',404);return row;};
  const messages=id=>all('SELECT * FROM (SELECT * FROM messages WHERE ticket_id=? ORDER BY created_at DESC LIMIT 100) ORDER BY created_at',id);
@@ -111,14 +132,14 @@ export function createApp({databasePath=':memory:',adminEmail,adminPassword,prod
   res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   try {
    const url=new URL(req.url,'http://localhost');const path=url.pathname;
-   throttle(`ip:${req.socket.remoteAddress}`,300);
+   throttle(`ip:${clientAddress(req)}`,300);
    if(req.method==='GET'&&path==='/api/health') return send(res,200,{ok:true,storage:'SQLite',media_uploads:false});
    if(req.method==='GET'&&path==='/api/app/public-config') return send(res,200,{...published(),delivery_requires_client_checks:true,sdk_required:'Ads-enabled build, partner mediation mapping and UMP consent'});
    if(path.startsWith('/api/admin/') && req.method!=='GET') {
-    check(req.headers.origin===`${production?'https':'http'}://${req.headers.host}`,'Invalid request origin',403);
+    check(req.headers.origin===(publicOrigin||`${production?'https':'http'}://${req.headers.host}`),'Invalid request origin',403);
    }
    if(path==='/api/admin/login'&&req.method==='POST') {
-    throttle(`login:${req.socket.remoteAddress}`,8);const input=await body(req);
+    throttle(`login:${clientAddress(req)}`,8);const input=await body(req);
     const email=text(input.email,3,254,'email').toLowerCase();const password=text(input.password,1,256,'password');
     const record=get('SELECT * FROM admins WHERE email=?',email);const salt=record?.salt||'missing-user';
     const hash=scryptSync(password,salt,64);check(record&&timingSafeEqual(hash,Buffer.from(record.password_hash,'hex')),'Incorrect email or password',401);
@@ -175,7 +196,7 @@ export function createApp({databasePath=':memory:',adminEmail,adminPassword,prod
     throw new ApiError(404,'Admin endpoint not found');
    }
    if(path==='/api/app/register'&&req.method==='POST') {
-    throttle(`register:${req.socket.remoteAddress}`,30);const input=await body(req);validId(input.installation_id);check(!get('SELECT id FROM devices WHERE id=?',input.installation_id),'Installation already registered; use its credential',409);
+    throttle(`register:${clientAddress(req)}`,30);const input=await body(req);validId(input.installation_id);check(!get('SELECT id FROM devices WHERE id=?',input.installation_id),'Installation already registered; use its credential',409);
     const token=randomBytes(32).toString('hex');run('INSERT INTO devices(id,credential_hash,first_seen,last_seen) VALUES(?,?,?,?)',input.installation_id,digest(token),now(),now());return send(res,201,{token});
    }
    if(path.startsWith('/api/app/')) {
@@ -222,7 +243,9 @@ export function createApp({databasePath=':memory:',adminEmail,adminPassword,prod
  server.on('close',()=>{clearInterval(purge);db.close();});return server;
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
- const production=process.env.NODE_ENV==='production';const server=createApp({databasePath:process.env.LUMEN_DATABASE||join(root,'data','lumen.sqlite'),adminEmail:process.env.LUMEN_ADMIN_EMAIL,adminPassword:process.env.LUMEN_ADMIN_PASSWORD,production});
+ const production=process.env.NODE_ENV==='production';
+ if(production&&(!process.env.PUBLIC_ORIGIN||!process.env.LUMEN_DATABASE)) throw new Error('Production requires PUBLIC_ORIGIN and a persistent LUMEN_DATABASE path');
+ const server=createApp({databasePath:process.env.LUMEN_DATABASE||join(root,'data','lumen.sqlite'),adminEmail:process.env.LUMEN_ADMIN_EMAIL,adminPassword:process.env.LUMEN_ADMIN_PASSWORD,production,publicOrigin:process.env.PUBLIC_ORIGIN||'',trustLoopbackProxy:process.env.TRUST_LOOPBACK_PROXY==='true'});
  delete process.env.LUMEN_ADMIN_PASSWORD;
- server.listen(Number(process.env.PORT||4173),'127.0.0.1',()=>console.log(`Lumen Admin: http://127.0.0.1:${server.address().port}`));
+ server.listen(Number(process.env.PORT||4173),process.env.HOST||'127.0.0.1',()=>console.log(`Lumen Admin listening on port ${server.address().port}`));
 }

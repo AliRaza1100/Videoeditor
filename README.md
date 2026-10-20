@@ -68,3 +68,5 @@ replaced before publishing. APK signing keys are configured privately using the
 release helper. Source/API compilation and configuration tests passed; real-device
 advertising, partner account readiness and production publishing require validation.
 No license has been selected; no open-source license is implied.
+
+Latest backend: primary/backup route controls, selected-resolution reward offers and production-origin protection. Deploy only `admin-dashboard`; follow `admin-dashboard/HOSTINGER-DEPLOYMENT.md` for the Node 24, persistent SQLite and HTTPS setup. No hosting has been deployed automatically.
