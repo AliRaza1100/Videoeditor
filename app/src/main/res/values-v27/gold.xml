@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.Lumen.Gold" parent="Theme.Lumen.Gold.Base">
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+    </style>
+</resources>

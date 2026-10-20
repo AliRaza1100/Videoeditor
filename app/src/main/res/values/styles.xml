@@ -1,0 +1,41 @@
+<resources>
+    <style name="Theme.Lumen" parent="Theme.Lumen.Base" />
+    <style name="Theme.Lumen.Light" parent="Theme.Lumen.Light.Base" />
+    <style name="Theme.Lumen.Violet" parent="Theme.Lumen.Violet.Base" />
+    <style name="Theme.Lumen.Violet.Base" parent="Theme.Lumen.Light.Base">
+        <item name="android:windowBackground">#F5F1FF</item>
+        <item name="android:colorAccent">#713BD9</item>
+        <item name="android:statusBarColor">#F5F1FF</item>
+        <item name="android:navigationBarColor">#241443</item>
+    </style>
+    <style name="Theme.Lumen.Gold" parent="Theme.Lumen.Gold.Base" />
+    <style name="Theme.Lumen.Gold.Base" parent="Theme.Lumen.Light.Base">
+        <item name="android:windowBackground">#FFFFFF</item>
+        <item name="android:colorAccent">#785600</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:navigationBarColor">#29220F</item>
+    </style>
+    <style name="Theme.Lumen.Launch" parent="Theme.Lumen.Gold">
+        <item name="android:windowBackground">@color/studio_launch_background</item>
+    </style>
+    <style name="Theme.Lumen.Base" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">#0F1118</item>
+        <item name="android:colorAccent">#B7A6FF</item>
+        <item name="android:statusBarColor">#0F1118</item>
+        <item name="android:navigationBarColor">#0F1118</item>
+        <item name="android:windowFullscreen">false</item>
+    </style>
+    <style name="Theme.Lumen.Light.Base" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">#FFFFFF</item>
+        <item name="android:colorAccent">#000000</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowFullscreen">false</item>
+    </style>
+</resources>
+

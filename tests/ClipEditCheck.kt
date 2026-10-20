@@ -1,0 +1,40 @@
+package com.lumen.studio
+
+fun main() {
+    val a=EditorClip("file:///a.mp4","A",true,sourceDurationMs=8000,
+        texts=listOf(TextLayer(text="A only")),sounds=listOf(SoundLayer(uri="file:///s.wav",name="Sound",startMs=500)))
+    val b=EditorClip("file:///b.mp4","B",true,sourceDurationMs=5000)
+    val initial=EditorState(listOf(a,b))
+    val edited=ClipEdits.update(initial) { it.copy(filter="Mono",overlays=listOf(ImageLayer(uri="file:///overlay.png"))) }
+    check(edited.clips[1] == b && edited.clips[0].filter == "Mono")
+    val trimmed=ClipEdits.trim(a,1000,6000); check(ClipEdits.duration(trimmed) == 5000L)
+    check(runCatching { ClipEdits.trim(a,6000,1000) }.isFailure)
+    check(runCatching { ClipEdits.trim(a,0,9000) }.isFailure)
+    val split=ClipEdits.split(initial,3000)
+    check(split.clips.size == 3 && split.clips[0].endMs == 3000 && split.clips[1].startMs == 3000)
+    check(split.clips[0].id != split.clips[1].id)
+    check(split.clips[0].sounds[0].endMs == 3000L && split.clips[1].sounds[0].sourceStartMs == 2500L)
+    val independent=ClipEdits.update(split.copy(active=1)) { it.copy(texts=it.texts+TextLayer(text="Right only")) }
+    check(independent.clips[0].texts.size == 1 && independent.clips[1].texts.size == 2)
+    val history=EditHistory(initial); history.change(split); check(history.undo() && history.state == initial); check(history.redo() && history.state == split)
+    val deleted=ClipEdits.delete(initial); check(deleted.clips == listOf(b))
+    check(ClipEdits.delete(deleted).clips.isEmpty())
+    check(ClipEdits.move(initial,1).clips == listOf(b,a))
+    val curve=a.copy(speedCurve=listOf(1f,2f,1f))
+    check(kotlin.math.abs(ClipEdits.duration(curve)-5545)<5)
+    check(kotlin.math.abs(ClipEdits.sourcePosition(curve,ClipEdits.outputPosition(curve,4000.0).toLong())-4000)<5)
+    val divided=ClipEdits.split(EditorState(listOf(curve)),4000)
+    check(kotlin.math.abs(divided.clips.sumOf { ClipEdits.duration(it) }-ClipEdits.duration(curve))<10)
+    val twice=ClipEdits.split(split.copy(active=1),5500)
+    check(twice.clips.sumOf { ClipEdits.duration(it) }==initial.clips.sumOf { ClipEdits.duration(it) })
+    check(twice.clips.map { it.id }.toSet().size==twice.clips.size)
+    val duplicate=ClipEdits.duplicate(initial)
+    check(duplicate.clips.size==3 && duplicate.clips[0].uri==duplicate.clips[1].uri)
+    check(duplicate.clips[0].id!=duplicate.clips[1].id && duplicate.clips[0].texts[0].id!=duplicate.clips[1].texts[0].id)
+    val global=initial.copy(projectTexts=listOf(TextLayer(text="Independent")),projectSounds=listOf(SoundLayer(uri="file:///s.wav",name="Music")))
+    check(ClipEdits.delete(global).projectTexts==global.projectTexts && ClipEdits.delete(global).projectSounds==global.projectSounds)
+    val captions=CaptionParser.parse("1\n00:00:00,500 --> 00:00:02,000\nاردو\n中文\n",1500)
+    check(captions.single().startMs==500L && captions.single().endMs==1500L && captions.single().text=="اردو\n中文")
+    check(runCatching { CaptionParser.parse("1\n00:00:02,000 --> 00:00:01,000\nInvalid",3000) }.isFailure)
+    println("Clip checks passed: independent edits, trim bounds, split audio offsets, split IDs, delete, reorder and undo/redo.")
+}

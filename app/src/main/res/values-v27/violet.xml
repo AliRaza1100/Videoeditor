@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.Lumen.Violet" parent="Theme.Lumen.Violet.Base">
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:navigationBarColor">#F5F1FF</item>
+    </style>
+</resources>

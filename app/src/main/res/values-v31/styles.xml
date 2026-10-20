@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.Lumen.Launch" parent="Theme.Lumen.Gold">
+        <item name="android:windowSplashScreenBackground">@color/studio_launch_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_studio</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
+    </style>
+</resources>

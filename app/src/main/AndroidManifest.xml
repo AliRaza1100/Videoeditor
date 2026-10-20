@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Optional admin API: media remains local. No requests occur when the API URL is unset. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+    <application android:name=".graphics.GraphicsApplication" android:networkSecurityConfig="@xml/network_security_config" android:usesCleartextTraffic="false" android:label="${appLabel}" android:icon="@mipmap/ic_launcher" android:theme="@style/Theme.Lumen" android:allowBackup="false" android:fullBackupContent="@xml/backup_rules" android:dataExtractionRules="@xml/data_extraction_rules" android:supportsRtl="true">
+        <activity android:name=".SupportInboxActivity" android:exported="false" />
+        <receiver android:name=".ReminderReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
+        </receiver>
+        <activity android:name=".TermsActivity" android:exported="false" />
+        <activity android:name=".MediaPickerActivity" android:exported="false" />
+        <activity android:name=".PhotoEditorActivity" android:exported="false" />
+        <activity android:name=".EditorActivity" android:exported="false" />
+        <activity android:name=".SoundLibraryActivity" android:exported="false" />
+        <activity android:name=".VideoPlayerActivity" android:exported="false" />
+        <activity android:name=".PlaybackCheckActivity" android:exported="false" />
+        <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.Lumen.Launch">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

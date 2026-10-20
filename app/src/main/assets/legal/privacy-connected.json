@@ -1,0 +1,49 @@
+{
+  "effectiveDate": "20 October 2026",
+  "sections": [
+    {
+      "title": "Media you choose",
+      "body": "Lumen Studio edits photos, videos and audio you select through Android's picker or Files. It does not request access to your entire photo or video library. Android may offer files from a cloud provider; retrieving those files is handled by Android or that provider. Processing within Lumen Studio happens on your device."
+    },
+    {
+      "title": "Local editing data",
+      "body": "Drafts store file references, filenames, clip timing and your edits, including authored text. Imported or extracted sounds, generated stickers and freeze frames are stored privately by the app. If a provider cannot retain file access, the app may keep a private copy so a draft can be reopened. Source files must remain accessible unless privately copied."
+    },
+    {
+      "title": "Collection and sharing",
+      "body": "This connected edition offers optional usage analytics and text-only support through the developer-operated API. It does not upload photos, videos, audio, project files, filenames or authored project text. Exported files are saved to the destination you choose. The external service you choose for sharing handles the exported file under its own terms. The current edition has no advertising or analytics SDK from an ad network."
+    },
+    {
+      "title": "Optional usage analytics",
+      "body": "Share usage analytics is off by default. If you enable it, the app sends a random installation ID, brand/model, Android API level, screen density, configured locale/region, app version and counters for app opens, completed video exports, image-edit starts and selected feature IDs to the administrator. Locale region is not verified physical location. No advertising ID, IMEI, serial number, GPS location or hardware fingerprint is used. The installation ID can change after reinstalling or clearing app data. We use the records to understand use and compatibility, not to identify a person. You may stop sharing in Settings without losing editing functionality."
+    },
+    {
+      "title": "Remote ad settings",
+      "body": "When this connected app enters the foreground and periodically while it remains open, it may fetch public versioned ad-placement settings without an installation identifier. This SDK-free edition cannot display an ad or install an advertising SDK from these settings. If you enable optional usage analytics, it reports the received configuration version, app version, whether the build includes advertising, and receipt time with the random installation ID. These diagnostics confirm configuration delivery only. Turning analytics off requests deletion of receipts and usage history."
+    },
+    {
+      "title": "Retention and deletion",
+      "body": "Local drafts remain until you delete them or clear Android app storage. Delete drafts in Projects and sounds in the sound library. Original media and exports outside private app storage remain under your control. On the server, detailed usage events are retained for up to 90 days, daily usage totals for up to 365 days, support conversations for up to 180 days after their last update, and inactive installation records for up to 365 days after their last authenticated activity. Turning off Share usage analytics saves your choice immediately and requests removal of usage history and device profile; if offline, the request is retried when the app next opens with a connection. Support conversations remain. Settings > Delete online data removes this installation record, usage history and support conversations when the request succeeds. Clearing Android app storage alone does not delete server records and may remove the credential needed to request deletion; contact the administrator for assistance. New installations cannot automatically recover earlier conversations."
+    },
+    {
+      "title": "Permissions and reminders",
+      "body": "Notifications are optional and off by default. When enabled, generic editing reminders are scheduled approximately every three hours, including overnight, subject to Android delivery rules. You can disable them in Settings or Android notification settings. Media is accessed only after you choose it. The app does not request camera, microphone, location, contacts or device-wide storage permissions."
+    },
+    {
+      "title": "Contacting support",
+      "body": "When you press Send in Contact Us, the app sends your reason, description and a random installation ID to the administrator through the configured API. Replies are delivered to Support inbox when you open it. Support is available without enabling usage analytics. No attachments or SMS permission are used. Avoid sending passwords or sensitive information in messages. The configured hosting/database provider processes the messages to operate support. The administrator can read and respond to these conversations."
+    },
+    {
+      "title": "Security",
+      "body": "Media and drafts remain in Android app-private or user-selected storage; app backup is disabled. Public API connections require HTTPS. A random per-installation credential protects access to your support conversations. Only local debug builds allow HTTP to approved loopback/emulator addresses. The server holds credential hashes and administrator password hashes. The hosting provider necessarily receives network connection information such as the source IP; the local implementation uses IP addresses transiently for rate limiting and does not store them in its database. Production hosting and logging practices must be documented before publication."
+    },
+    {
+      "title": "Accounts, purchases and audiences",
+      "body": "This edition does not create user accounts or sell subscriptions or in-app purchases. There is no account to delete. The developer must declare the intended audience and age rating accurately before release; this test policy does not claim a verified child-directed service."
+    },
+    {
+      "title": "Policy changes",
+      "body": "The effective date above identifies this version. If data handling changes, including adding cloud processing, advertising or other SDKs, the policy and store declarations must be updated before that edition is published."
+    }
+  ]
+}
