@@ -15,6 +15,7 @@ class MainActivity : BaseActivity() {
     private var phase = "splash"
     private var page = 0
     private var tab = "home"
+    private var choiceSelection: String?=null
     private val preferences by lazy { getSharedPreferences("onboarding", MODE_PRIVATE) }
     private val installedVersion: Long by lazy {
         @Suppress("DEPRECATION")
@@ -33,6 +34,7 @@ class MainActivity : BaseActivity() {
         page = (savedInstanceState?.getInt("page", 0) ?: 0).coerceIn(0,OnboardingView.PAGE_COUNT-1)
         phase = savedInstanceState?.getString("phase") ?: "splash"
         tab = savedInstanceState?.getString("tab") ?: "home"
+        choiceSelection=savedInstanceState?.getString("choice_selection")
         if(intent.getBooleanExtra("from_reminder",false)) tab = "home"
         Reminders.configure(this)
         AdminConnection.opened(applicationContext)
@@ -74,7 +76,7 @@ class MainActivity : BaseActivity() {
             "saved" -> setContentView(ProjectsView(this,::navigate))
             "settings" -> setContentView(SettingsView(this,::navigate))
             "notifications" -> setContentView(NotificationsView(this,::navigate))
-            "theme", "languages" -> setContentView(AppearanceChoicesView(this,tab=="theme",::navigate))
+            "theme", "languages" -> setContentView(AppearanceChoicesView(this,tab=="theme",::navigate).apply { restoreDraft(choiceSelection) })
             "privacy" -> setContentView(PrivacyPolicyView(this,::navigate))
             "about" -> setContentView(AboutUsView(this,::navigate))
             else -> setContentView(HomeView(this,::navigate))
@@ -86,7 +88,7 @@ class MainActivity : BaseActivity() {
         if(action=="contact") { ContactUs.show(this); return }
         if(action=="diagnostics") { startActivity(Intent(this,PlaybackCheckActivity::class.java)); return }
         if(action in listOf("home","projects","saved","settings","notifications","theme","languages","privacy","about")) {
-            tab = action; showEditor(); return
+            choiceSelection=null;tab = action; showEditor(); return
         }
         if(action=="ai_regrade") { android.widget.Toast.makeText(this,Ui.t(this,"Coming soon"),android.widget.Toast.LENGTH_SHORT).show(); return }
         if(action.startsWith("open:")) { val id=action.removePrefix("open:"); val target=if(ProjectStore.load(this,id)?.state?.photoEditor==true) PhotoEditorActivity::class.java else EditorActivity::class.java; startActivity(Intent(this,target).putExtra("project_id",id)); return }
@@ -100,7 +102,8 @@ class MainActivity : BaseActivity() {
                 startActivityForResult(Intent(this, MediaPickerActivity::class.java).putExtra("mode", mode).putExtra("direct_selection",true), if(mode=="photo") 101 else 100)
             }
     }
-    override fun onResume() { super.onResume(); if(phase == "editor") showEditor(); if(TermsConsent.accepted(this)) AdsController.refresh(this) }
+    private fun selectedAppearance()=findViewById<AppearanceChoicesView>(if(tab=="theme") R.id.theme_choices else R.id.language_choices)?.draftSelection
+    override fun onResume() { super.onResume(); if(phase == "editor") { choiceSelection=selectedAppearance() ?: choiceSelection;showEditor() }; if(TermsConsent.accepted(this)) AdsController.refresh(this) }
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent); setIntent(intent)
         if(intent.getBooleanExtra("from_reminder",false) && phase == "editor") { tab = "home"; showEditor() }
@@ -128,6 +131,7 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("choice_selection",selectedAppearance() ?: choiceSelection)
         outState.putString("phase", phase)
         outState.putInt("page", page)
         outState.putString("tab",tab)

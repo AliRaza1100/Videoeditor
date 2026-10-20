@@ -70,3 +70,5 @@ advertising, partner account readiness and production publishing require validat
 No license has been selected; no open-source license is implied.
 
 Latest source: optional pre-export rewards at admin-selected resolutions, real 1080p, same-format backup routes and Hostinger deployment guidance in `docs/HOSTINGER-DEPLOYMENT.md`. This requires a new app build; the prior 1.15 APK is unchanged.
+
+Latest UI source: redesigned Settings, Projects, Language and Theme screens. See `docs/UI-REDESIGN.md` for behavior and verification limits. The existing 1.16 testing APK does not include these UI changes.

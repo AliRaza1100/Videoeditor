@@ -1,3 +1,5 @@
 <resources>
     <item name="preview_uri" type="id" />
+    <item name="theme_choices" type="id" />
+    <item name="language_choices" type="id" />
 </resources>

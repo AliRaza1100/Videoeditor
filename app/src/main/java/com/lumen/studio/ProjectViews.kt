@@ -105,61 +105,13 @@ class BottomNavigation(context: Context,selected: String,navigate: (String)->Uni
         listOf(Triple("Home","home",R.drawable.ph_house),Triple("Projects","projects",R.drawable.ph_folder_simple),Triple("Settings","settings",R.drawable.ph_gear_six)).forEach { (name,key,icon) ->
             val active=selected==key
             val selectedColor=homeAccent ?: StudioDesign.accent(context)
-            val item=LinearLayout(context).apply { orientation=VERTICAL; gravity=Gravity.CENTER; isSelected=active; isFocusable=true; contentDescription=Ui.t(context,name); setOnClickListener { navigate(key) }; if(active && homeAccent==null) background=StudioDesign.shape(context,StudioDesign.raised(context),14) }
+            val item=LinearLayout(context).apply {
+                orientation=VERTICAL;gravity=Gravity.CENTER;isSelected=active;isFocusable=true;contentDescription=Ui.t(context,name);setOnClickListener { navigate(key) }
+                if(active && homeAccent==null) background=StudioDesign.shape(context,if(AppPreferences.theme(context)=="gold") Color.rgb(255,247,229) else StudioDesign.raised(context),20)
+            }
             item.addView(ImageView(context).apply { setImageResource(icon); imageTintList=ColorStateList.valueOf(if(active) selectedColor else StudioDesign.muted(context)); importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO },LayoutParams(Ui.dp(context,22),Ui.dp(context,22)))
             item.addView(StudioDesign.label(context,name,11f,bold=active).apply { gravity=Gravity.CENTER; if(homeAccent!=null) { tag="media"; setTextColor(if(active) selectedColor else StudioDesign.muted(context)) }; setPadding(0,Ui.dp(context,5),0,0) })
             addView(item,LayoutParams(0,Ui.dp(context,56),1f))
         }
-    }
-}
-
-class ProjectsView(context: Context,private val navigate: (String)->Unit,private val savedOnly: Boolean): LinearLayout(context) {
-    constructor(context: Context,navigate: (String)->Unit): this(context,navigate,false)
-    private fun dp(n: Int)=Ui.dp(context,n)
-    private val heading=StudioDesign.label(context,"",26f,bold=true)
-    private val summary=StudioDesign.label(context,"",12f,secondary=true)
-    private val column=LinearLayout(context).apply { orientation=VERTICAL; setPadding(dp(16),0,dp(16),dp(88)) }
-    private var filter="All"; private var sort=0; private var grid=true
-    init {
-        orientation=VERTICAL; setBackgroundColor(StudioDesign.background(context))
-        addView(heading.apply { setPadding(dp(20),dp(16),dp(20),dp(8)) })
-        addView(summary.apply { setPadding(dp(20),0,dp(20),dp(8)) })
-        if(savedOnly) addView(StudioDesign.label(context,"Unfinished drafts · your progress below 100%",12f,secondary=true).apply { setPadding(dp(20),0,dp(20),dp(8)) })
-        val options=LinearLayout(context).apply { gravity=Gravity.CENTER_VERTICAL; setPadding(dp(16),dp(4),dp(16),dp(4)) }
-        options.addView(StudioDesign.button(context,"Sort: newest") {
-            val names=arrayOf("Newest","Oldest","Name","Duration")
-            AppDialog(context).setTitle("Sort projects").setSingleChoiceItems(names,sort) { dialog,index -> sort=index; (options.getChildAt(0) as TextView).text="Sort: ${names[index].lowercase()}"; render(); dialog.dismiss() }.show()
-        }.apply { background=null; gravity=Gravity.START or Gravity.CENTER_VERTICAL },LayoutParams(0,dp(48),1f))
-        options.addView(StudioDesign.button(context,"List") { grid=!grid; (options.getChildAt(1) as TextView).text=if(grid) "List" else "Grid"; render() },LayoutParams(dp(80),dp(48)).apply { marginStart=dp(8) }); addView(options)
-        val chips=LinearLayout(context).apply { setPadding(dp(16),0,dp(16),dp(12)) }
-        listOf("All","Recent","Photos","Videos").forEach { name ->
-            chips.addView(StudioDesign.button(context,name) {
-                filter=name
-                for(i in 0 until chips.childCount) { val child=chips.getChildAt(i) as TextView; val active=child.tag==name; child.isSelected=active; child.background=StudioDesign.shape(context,if(active) StudioDesign.raised(context) else StudioDesign.surface(context),10,active) }
-                render()
-            }.apply { contentDescription=name; tag=name; isSelected=name=="All"; background=StudioDesign.shape(context,if(isSelected) StudioDesign.raised(context) else StudioDesign.surface(context),10,isSelected) },LayoutParams(-2,dp(48)).apply { marginEnd=dp(8) })
-        }
-        addView(HorizontalScrollView(context).apply { isHorizontalScrollBarEnabled=false; addView(chips) },LayoutParams(-1,-2))
-        val frame=FrameLayout(context); frame.addView(ScrollView(context).apply { addView(column) },FrameLayout.LayoutParams(-1,-1))
-        frame.addView(StudioDesign.button(context,"＋ New project",primary=true) { navigate("new_video") },FrameLayout.LayoutParams(-2,dp(56),Gravity.END or Gravity.BOTTOM).apply { setMargins(dp(16),dp(16),dp(16),dp(16)) })
-        addView(frame,LayoutParams(-1,0,1f)); addView(AdBannerSlot(context,"projects_banner"),LayoutParams(-1,-2)); addView(BottomNavigation(context,if(savedOnly) "saved" else "projects",navigate)); render()
-    }
-    private fun render() {
-        column.removeAllViews()
-        val all=ProjectStore.list(context).filter { !savedOnly || ProjectPresentation.progress(context,it.id)<100 }
-        val videos=all.count { it.state.photoEditor!=true }
-        heading.text="${if(savedOnly) "Drafts" else "Projects"} · ${all.size}"
-        val photos=all.size-videos
-        summary.text="$videos ${if(videos==1) "video project" else "video projects"} · $photos ${if(photos==1) "photo project" else "photo projects"}"
-        val matches=all.filter { when(filter) { "Photos" -> it.state.photoEditor==true; "Videos" -> it.state.photoEditor!=true; "Recent" -> it.updated>=System.currentTimeMillis()-7*86400000L; else -> true } }
-        val projects=when(sort) { 1 -> matches.sortedBy { it.updated }; 2 -> matches.sortedBy { ProjectPresentation.name(context,it.id,it.name).lowercase() }; 3 -> matches.sortedByDescending { it.state.clips.sumOf(ClipEdits::duration) }; else -> matches.sortedByDescending { it.updated } }
-        if(filter=="Recent") column.addView(StudioDesign.label(context,"Edited in the last 7 days",12f,secondary=true))
-        if(projects.isEmpty()) column.addView(StudioDesign.label(context,"No matching projects. Create a project or change your search.",14f,secondary=true))
-        if(grid) projects.chunked(2).forEach { pair ->
-            val row=LinearLayout(context)
-            val width=(resources.displayMetrics.widthPixels-dp(48))/2
-            pair.forEach { project -> row.addView(ProjectRow(context,project,{ render() },compact=true,gridCard=grid) { navigate("open:${project.id}") },LayoutParams(width,-2).apply { marginEnd=dp(8) }) }
-            column.addView(row,LayoutParams(-1,-2))
-        } else projects.forEach { project -> column.addView(ProjectRow(context,project,{ render() },compact=true,gridCard=grid) { navigate("open:${project.id}") }) }
     }
 }
