@@ -75,7 +75,9 @@ class SettingsView(private val activity: Activity, private val navigate: (String
     private fun toggle(title: String,checked: Boolean,onChange: (Boolean)->Unit)=Switch(activity).apply {
         contentDescription=Ui.t(activity,title);showText=false;isChecked=checked;minimumWidth=dp(48);minimumHeight=dp(48)
         thumbTintList=ColorStateList.valueOf(Color.WHITE)
-        trackTintList=ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked),intArrayOf()),intArrayOf(accent,if(gold) Color.rgb(164,157,140) else StudioDesign.muted(activity)))
+        val activeTrack=if(theme=="dark") StudioDesign.primary(activity) else accent
+        val inactiveTrack=if(theme=="dark") StudioDesign.border(activity) else secondary
+        trackTintList=ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked),intArrayOf()),intArrayOf(activeTrack,inactiveTrack))
         setOnCheckedChangeListener { _,enabled -> onChange(enabled) }
     }
     init {

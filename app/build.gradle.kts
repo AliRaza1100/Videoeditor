@@ -39,8 +39,8 @@ android {
         buildConfigField("boolean","ADS_TEST_APP",(admobAppId=="ca-app-pub-3940256099942544~3347511713").toString())
         minSdk=26
         targetSdk=36
-        versionCode=17
-        versionName="1.16"
+        versionCode=18
+        versionName="1.17"
         testInstrumentationRunner="android.test.InstrumentationTestRunner"
         buildConfigField("String","DEVELOPER_NAME",JsonOutput.toJson(developerName))
         buildConfigField("String","SUPPORT_EMAIL",JsonOutput.toJson(supportEmail))
