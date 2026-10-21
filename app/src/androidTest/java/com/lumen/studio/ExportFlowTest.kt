@@ -48,9 +48,14 @@ class ExportFlowTest: InstrumentationTestCase() {
                 main { views(editor.window.decorView).filterIsInstance<TextView>().first { it.text.toString()=="EXPORT" }.performClick() }
                 waitFor("Direct resolution sheet missing") { editor.toolsDialog?.isShowing==true }
                 val sheet=main { editor.toolsDialog!! }
-                val options=main { views(sheet.window!!.decorView).filterIsInstance<TextView>().filter { it.isClickable && it.text.toString() in listOf("360p","480p","720p","1020p","2000p") } }
+                val options=main { views(sheet.window!!.decorView).filter { it.isClickable && it.contentDescription?.toString() in listOf("Export 360p","Export 480p","Export 720p","Export 1080p","Export 2000p") } }
                 assertEquals(5,options.size)
-                main { options.forEach { assertEquals("Unreadable label in theme=$theme",StudioDesign.primaryText(context),it.currentTextColor); assertTrue(it.isEnabled) }; options.first { it.text.toString()=="720p" }.performClick() }
+                main {
+                    options.forEach { assertTrue(it.isEnabled) }
+                    options.first { it.contentDescription.toString()=="Export 720p" }.performClick()
+                    assertNull("Selection must wait for Apply",picked.get())
+                    views(sheet.window!!.decorView).filterIsInstance<TextView>().first { it.text.toString()=="Apply" }.performClick()
+                }
                 waitFor("Destination picker missing") { picked.get()!=null }
                 assertEquals("video/mp4",picked.get().type)
                 assertTrue(picked.get().getStringExtra(Intent.EXTRA_TITLE)!!.contains("720p"))

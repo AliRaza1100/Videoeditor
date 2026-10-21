@@ -1288,11 +1288,28 @@ class EditorActivity : BaseActivity() {
         header.addView(label(title,21f),LinearLayout.LayoutParams(0,dp(52),1f))
         header.addView(StudioDesign.button(this,"×") { dialog.dismiss() }.apply { contentDescription="Close export options"; background=null },LinearLayout.LayoutParams(dp(48),dp(48)))
         body.addView(header)
-        items.forEachIndexed { index,item -> body.addView(StudioDesign.button(this,item,primary=true) { dialog.dismiss(); action(index) }.apply { gravity=Gravity.START or Gravity.CENTER_VERTICAL; textSize=18f; contentDescription="Export $item" },LinearLayout.LayoutParams(-1,dp(56)).apply { topMargin=dp(8) }) }
+        body.addView(StudioDesign.label(this,"Choose the video resolution for export",13f,secondary=true),LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=dp(16) })
+        var selected=listOf(360,480,720,1080,2000).indexOf(exportResolution).let { if(it<0) 2 else it }
+        val rows=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
+        val descriptions=listOf("Smaller file size, faster export","Good quality, balanced size","High quality, recommended","Full HD, best for sharing","Highest quality, larger file size")
+        fun drawOptions() {
+            rows.removeAllViews()
+            items.take(5).forEachIndexed { index,item ->
+                val chosen=index==selected
+                val row=LinearLayout(this).apply { gravity=Gravity.CENTER_VERTICAL; setPadding(dp(12),dp(10),dp(12),dp(10)); background=StudioDesign.shape(this@EditorActivity,if(chosen) StudioDesign.raised(this@EditorActivity) else StudioDesign.background(this@EditorActivity),14).apply { if(chosen) setStroke(dp(1),StudioDesign.accent(this@EditorActivity)) }; contentDescription="Export $item"; isSelected=chosen; setOnClickListener { selected=index; drawOptions() } }
+                row.addView(StudioDesign.label(this,listOf("SD","SD","HD","FHD","2K")[index],13f,bold=true).apply { gravity=Gravity.CENTER; setTextColor(StudioDesign.accent(this@EditorActivity)); background=StudioDesign.shape(this@EditorActivity,StudioDesign.raised(this@EditorActivity),12) },LinearLayout.LayoutParams(dp(48),dp(48)))
+                row.addView(LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(14),0,dp(4),0); addView(StudioDesign.label(this@EditorActivity,item,16f,bold=true)); addView(StudioDesign.label(this@EditorActivity,descriptions[index],12f,secondary=true)) },LinearLayout.LayoutParams(0,-2,1f))
+                row.addView(StudioDesign.label(this,if(chosen) "◉" else "○",26f).apply { setTextColor(if(chosen) StudioDesign.accent(this@EditorActivity) else StudioDesign.muted(this@EditorActivity)); gravity=Gravity.CENTER },LinearLayout.LayoutParams(dp(32),dp(44)))
+                rows.addView(row,LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=dp(10) })
+            }
+        }
+        drawOptions(); body.addView(rows)
+        if(items.size>5) body.addView(StudioDesign.button(this,items[5]) { dialog.dismiss(); action(5) })
+        body.addView(StudioDesign.button(this,"Apply",primary=true) { dialog.dismiss(); action(selected) }.apply { StudioDesign.referenceAction(this@EditorActivity,this) },LinearLayout.LayoutParams(-1,dp(52)).apply { topMargin=dp(20) })
         dialog.setContentView(ScrollView(this).apply { addView(body) })
         dialog.setOnDismissListener { if(toolsDialog===dialog) toolsDialog=null }
         toolsDialog=dialog; dialog.show()
-        dialog.window?.apply { setBackgroundDrawableResource(android.R.color.transparent); setGravity(Gravity.TOP); setLayout(-1,-2); addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND); attributes=attributes.apply { dimAmount=.35f }; setWindowAnimations(android.R.style.Animation_Dialog) }
+        dialog.window?.apply { setBackgroundDrawableResource(android.R.color.transparent); setGravity(Gravity.BOTTOM); setLayout(-1,-2); addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND); attributes=attributes.apply { dimAmount=.35f }; setWindowAnimations(android.R.style.Animation_Dialog) }
     }
     private fun openExport(uri: String) { pause(); startActivity(Intent(this,VideoPlayerActivity::class.java).putExtra("video_uri",uri)) }
     private fun saveDraft(): Boolean { if(!::history.isInitialized || editingEpoch!=EditingStorage.epoch(this)) return false; return try { ProjectStore.save(this,SavedProject(projectId,projectName,System.currentTimeMillis(),state),editingEpoch); true } catch(_: Exception) { if(::status.isInitialized) status.text="Project could not be saved. Check available storage."; false } }

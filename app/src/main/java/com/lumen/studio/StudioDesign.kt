@@ -25,6 +25,13 @@ object StudioDesign {
         setColor(color); cornerRadius=Ui.dp(c,radius).toFloat()
         if(outline) setStroke(Ui.dp(c,1),border(c))
     }
+    /** Reference-style actions follow the selected palette; gold keeps its warm gradient. */
+    fun referenceAction(c: Context,button: android.widget.Button) {
+        button.tag="primary-action"
+        button.backgroundTintList=null
+        button.background=if(AppPreferences.theme(c)=="gold") GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(0xFFEBC766.toInt(),0xFFC3962F.toInt())).apply { cornerRadius=Ui.dp(c,14).toFloat() } else shape(c,primary(c),14)
+        button.setTextColor(primaryText(c))
+    }
     fun label(c: Context,value: String,size: Float=14f,secondary: Boolean=false,bold: Boolean=false)=AppText(c).apply {
         text=value; textSize=size; setTextColor(if(secondary) muted(c) else StudioDesign.text(c)); includeFontPadding=false
         if(bold) typeface=Typeface.create("sans-serif",Typeface.BOLD)

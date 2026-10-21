@@ -29,28 +29,28 @@ class SoundLibraryActivity : BaseActivity() {
     private var sounds = emptyList<LibrarySound>()
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
     private fun shape(color: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(14).toFloat() }
-    private fun label(value: String, size: Float = 13f) = AppText(this).apply { text = value; textSize = size; setTextColor(Color.rgb(235,239,247)); setPadding(dp(10),dp(8),dp(10),dp(8)) }
+    private fun label(value: String, size: Float = 13f) = AppText(this).apply { text = value; textSize = size; setTextColor(StudioDesign.text(this@SoundLibraryActivity)); setPadding(dp(10),dp(8),dp(10),dp(8)) }
     private fun button(value: String, action: () -> Unit) = AppButton(this).apply {
         text = value; isAllCaps = false; textSize = 13f; setTextColor(green)
-        background = shape(Color.rgb(28,32,37)); setOnClickListener { action() }
+        backgroundTintList=null; background = shape(StudioDesign.raised(this@SoundLibraryActivity)); setOnClickListener { action() }
     }
 
     override fun onCreate(saved: Bundle?) {
         super.onCreate(saved)
         selected = saved?.getString("selected")
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.rgb(15,17,20)); setPadding(dp(12),dp(8),dp(12),dp(12)) }
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(StudioDesign.background(this@SoundLibraryActivity)); setPadding(dp(16),dp(8),dp(16),dp(16)) }
         root.addView(LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             addView(button("←") { finish() }, LinearLayout.LayoutParams(dp(48),dp(48)))
-            addView(label("Sound",22f))
+            addView(LinearLayout(this@SoundLibraryActivity).apply { orientation=LinearLayout.VERTICAL; addView(label("Sound",26f).apply { setTypeface(typeface,1) }); addView(label("Add and manage your audio",12f).apply { setTextColor(StudioDesign.muted(this@SoundLibraryActivity)) }) },LinearLayout.LayoutParams(0,-2,1f)); addView(label("♫",40f).apply { setTextColor(green) })
         })
-        root.addView(label("Add a sound",17f))
-        addAudio = button("♫  Import sound from device") { pick("audio/*", 401) }
-        extractVideo = button("▣  Extract sound from video") { openVideoGallery() }
-        root.addView(addAudio, LinearLayout.LayoutParams(-1,dp(54)))
-        root.addView(extractVideo, LinearLayout.LayoutParams(-1,dp(54)).apply { topMargin = dp(8) })
-        status = label("")
-        root.addView(status)
+        val card=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; background=shape(StudioDesign.surface(this@SoundLibraryActivity)); setPadding(dp(10),dp(8),dp(10),dp(8)) }
+        card.addView(label("▏ Add a sound",16f).apply { setTypeface(typeface,1) })
+        addAudio = button("♫   Import sound from device  ›\nChoose audio files from your storage") { pick("audio/*",401) }
+        extractVideo = button("▣   Extract sound from video  ›\nExtract audio from your video clips") { openVideoGallery() }
+        listOf(addAudio,extractVideo).forEach { it.gravity=Gravity.START or Gravity.CENTER_VERTICAL; it.setPadding(dp(12),0,dp(12),0); card.addView(it,LinearLayout.LayoutParams(-1,dp(64)).apply { bottomMargin=dp(8) }) }
+        status=label("",12f).apply { setTextColor(StudioDesign.muted(this@SoundLibraryActivity)); background=shape(StudioDesign.raised(this@SoundLibraryActivity)) }
+        card.addView(status); root.addView(card,LinearLayout.LayoutParams(-1,-2).apply { topMargin=dp(16); bottomMargin=dp(16) })
         root.addView(LinearLayout(this).apply {
             gravity=Gravity.CENTER_VERTICAL
             addView(label("Your saved sounds",17f),LinearLayout.LayoutParams(0,-2,1f))
@@ -64,7 +64,7 @@ class SoundLibraryActivity : BaseActivity() {
             stopPreview()
             setResult(RESULT_OK, Intent().putExtra("sound_uri", Uri.fromFile(File(sound.path)).toString()).putExtra("sound_name", sound.name))
             finish()
-        }.apply { tag="primary-action"; background = shape(StudioDesign.primary(this@SoundLibraryActivity)); setTextColor(Color.WHITE) }
+        }.apply { StudioDesign.referenceAction(this@SoundLibraryActivity,this) }
         root.addView(apply, LinearLayout.LayoutParams(-1,dp(52)))
         setContentView(root)
         refresh()
@@ -120,16 +120,18 @@ class SoundLibraryActivity : BaseActivity() {
                 gravity = Gravity.CENTER_VERTICAL; setPadding(dp(6),dp(6),dp(6),dp(6)); background = StudioDesign.shape(this@SoundLibraryActivity,StudioDesign.surface(this@SoundLibraryActivity),14,true); if(selected==sound.id) foreground=GradientDrawable().apply { setColor(Color.TRANSPARENT); cornerRadius=dp(14).toFloat(); setStroke(dp(2),green) }
             }
             row.setOnClickListener { selected=if(selected==sound.id) null else sound.id; drawSounds(); updateSelection() }
-            row.addView(button(if (previewId == sound.id) "Ⅱ" else "▶") { viewSound(sound) }.apply {
+            val preview=button(if (previewId == sound.id) "Ⅱ" else "▶") { viewSound(sound) }.apply {
                 contentDescription = "Preview ${sound.name}"
                 tag = sound.id
-            }, LinearLayout.LayoutParams(dp(48),dp(48)))
+            }
+            row.addView(label("♫",26f).apply { gravity=Gravity.CENTER; setTextColor(green); background=shape(StudioDesign.raised(this@SoundLibraryActivity)) },LinearLayout.LayoutParams(dp(44),dp(44)))
             row.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(label(sound.name,14f))
+                addView(label(sound.name,14f).apply { maxLines=1; ellipsize=android.text.TextUtils.TruncateAt.END; setTypeface(typeface,1) })
                 val seconds = sound.durationMs / 1000
-                addView(label("%02d:%02d · %s".format(seconds/60,seconds%60,Ui.t(this@SoundLibraryActivity,if(sound.extracted) "Extracted from video" else "Device audio")),11f))
+                addView(label("%02d:%02d · %s".format(seconds/60,seconds%60,"%.1f MB".format(File(sound.path).length()/1048576.0)),11f))
             },LinearLayout.LayoutParams(0,-2,1f))
+            row.addView(preview,LinearLayout.LayoutParams(dp(44),dp(44)))
             row.addView(button(if (selected == sound.id) "●" else "○") { selected = if(selected == sound.id) null else sound.id; drawSounds(); updateSelection() }.apply {
                 contentDescription = if(selected == sound.id) "Deselect ${sound.name}" else "Select ${sound.name}"; isSelected = selected == sound.id
             },LinearLayout.LayoutParams(dp(48),dp(48)))
@@ -139,7 +141,7 @@ class SoundLibraryActivity : BaseActivity() {
     }
     private fun updateSelection() {
         val sound = sounds.firstOrNull { it.id == selected }
-        apply.isEnabled = sound != null; apply.alpha = if(sound == null) .4f else 1f
+        apply.isEnabled = sound != null; apply.alpha = if(sound == null) .75f else 1f
         apply.text = if(sound == null) "Select a sound to apply" else "Apply sound  →"
     }
     private fun viewSound(sound: LibrarySound) {
@@ -148,7 +150,7 @@ class SoundLibraryActivity : BaseActivity() {
         previewId = sound.id
         drawSounds()
         playingButton = (0 until list.childCount).mapNotNull { list.getChildAt(it) as? LinearLayout }
-            .mapNotNull { it.getChildAt(0) as? Button }.firstOrNull { it.tag == sound.id }
+            .mapNotNull { it.getChildAt(2) as? Button }.firstOrNull { it.tag == sound.id }
         try {
             previewPlayer = MediaPlayer().apply {
                 setDataSource(sound.path)
@@ -163,7 +165,7 @@ class SoundLibraryActivity : BaseActivity() {
         previewPlayer?.release(); previewPlayer = null; previewId = null
         playingButton?.text = "▶"; playingButton = null
         if (::list.isInitialized) (0 until list.childCount).forEach { index ->
-            ((list.getChildAt(index) as? LinearLayout)?.getChildAt(0) as? Button)?.text = "▶"
+            ((list.getChildAt(index) as? LinearLayout)?.getChildAt(2) as? Button)?.text = "▶"
         }
     }
     private val poll = object : Runnable {
