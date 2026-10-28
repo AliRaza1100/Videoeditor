@@ -1,0 +1,175 @@
+INSTRUMENTATION_STATUS: class=com.lumen.studio.QACompletionTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+com.lumen.studio.QACompletionTest:
+INSTRUMENTATION_STATUS: test=test01ColorSelectionAndCustomMixerInEveryTheme
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.lumen.studio.QACompletionTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=test01ColorSelectionAndCustomMixerInEveryTheme
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.lumen.studio.QACompletionTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=test02PhotoUnifiedControlsFixedDoneAndEmptySlotGallery
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.lumen.studio.QACompletionTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=test02PhotoUnifiedControlsFixedDoneAndEmptySlotGallery
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.lumen.studio.QACompletionTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=test03VideoMuteRailAndConfirmationActions
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.lumen.studio.QACompletionTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=test03VideoMuteRailAndConfirmationActions
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+com.lumen.studio.BugSheetRegressionTest:
+INSTRUMENTATION_STATUS: test=testFourTimesSpeedRetainsEndOfSourceVideoWithAndWithoutAudio
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=testFourTimesSpeedRetainsEndOfSourceVideoWithAndWithoutAudio
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=testHomeHighlightSortAndProjectTypeIconsInEveryTheme
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=testHomeHighlightSortAndProjectTypeIconsInEveryTheme
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=testLeftSoundButtonOpensLibrary
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=testLeftSoundButtonOpensLibrary
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=testPhotoCropDoneHandlesAndLastPhotoRemovalUndo
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stack=junit.framework.AssertionFailedError: Remove confirmation missing
+	at com.lumen.studio.BugSheetRegressionTest.waitFor(BugSheetRegressionTest.kt:23)
+	at com.lumen.studio.BugSheetRegressionTest.waitFor$default(BugSheetRegressionTest.kt:23)
+	at com.lumen.studio.BugSheetRegressionTest.testPhotoCropDoneHandlesAndLastPhotoRemovalUndo(BugSheetRegressionTest.kt:75)
+	at android.test.InstrumentationTestCase.runMethod(InstrumentationTestCase.java:220)
+	at android.test.InstrumentationTestCase.runTest(InstrumentationTestCase.java:205)
+	at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:195)
+	at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:181)
+	at android.test.InstrumentationTestRunner.onStart(InstrumentationTestRunner.java:563)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2627)
+
+INSTRUMENTATION_STATUS: stream=
+Failure in testPhotoCropDoneHandlesAndLastPhotoRemovalUndo:
+junit.framework.AssertionFailedError: Remove confirmation missing
+	at com.lumen.studio.BugSheetRegressionTest.waitFor(BugSheetRegressionTest.kt:23)
+	at com.lumen.studio.BugSheetRegressionTest.waitFor$default(BugSheetRegressionTest.kt:23)
+	at com.lumen.studio.BugSheetRegressionTest.testPhotoCropDoneHandlesAndLastPhotoRemovalUndo(BugSheetRegressionTest.kt:75)
+	at android.test.InstrumentationTestCase.runMethod(InstrumentationTestCase.java:220)
+	at android.test.InstrumentationTestCase.runTest(InstrumentationTestCase.java:205)
+	at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:195)
+	at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:181)
+	at android.test.InstrumentationTestRunner.onStart(InstrumentationTestRunner.java:563)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2627)
+
+INSTRUMENTATION_STATUS: test=testPhotoCropDoneHandlesAndLastPhotoRemovalUndo
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=testPhotoOnlyNewProjectRoutesToPhotoEditorAndRemindersSwitchOff
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=testPhotoOnlyNewProjectRoutesToPhotoEditorAndRemindersSwitchOff
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=testTightTextBackgroundPaddingAndFormatting
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.lumen.studio.BugSheetRegressionTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=testTightTextBackgroundPaddingAndFormatting
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.lumen.studio.PhotoWorkspaceTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+com.lumen.studio.PhotoWorkspaceTest:
+INSTRUMENTATION_STATUS: test=testCombinedTextFormattingSurvivesDraftAndChangesRenderedPixels
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.lumen.studio.PhotoWorkspaceTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=InstrumentationTestRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=testCombinedTextFormattingSurvivesDraftAndChangesRenderedPixels
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+Test results for InstrumentationTestRunner=.......F...
+Time: 104.716
+
+FAILURES!!!
+Tests run: 10,  Failures: 1,  Errors: 0
+
+
+INSTRUMENTATION_CODE: -1

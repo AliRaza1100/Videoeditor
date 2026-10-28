@@ -19,6 +19,12 @@ class CropEditorView(context: Context,initial: RectF) : View(context) {
     private val original=RectF()
     private val media=RectF()
     private val ink=Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    fun restoreRatio(name: String?) {
+        val parts=name?.split(':').orEmpty()
+        ratio=if(parts.size==2) (parts[0].toFloatOrNull() ?: 0f)/(parts[1].toFloatOrNull() ?: 1f) else 0f
+        if(!ratio.isFinite() || ratio<0) ratio=0f
+        invalidate()
+    }
     fun reset() { ratio=0f; crop.set(0f,0f,1f,1f); invalidate(); if(image!=null) onCropChanged?.invoke(RectF(crop)) }
     fun setRatio(value: Float) {
         require(value.isFinite() && value>=0)
@@ -42,7 +48,7 @@ class CropEditorView(context: Context,initial: RectF) : View(context) {
         ink.color=Color.argb(155,0,0,0)
         canvas.drawRect(media.left,media.top,media.right,r.top,ink); canvas.drawRect(media.left,r.bottom,media.right,media.bottom,ink)
         canvas.drawRect(media.left,r.top,r.left,r.bottom,ink); canvas.drawRect(r.right,r.top,media.right,r.bottom,ink)
-        ink.color=StudioDesign.accent(context); ink.style=Paint.Style.STROKE; ink.strokeWidth=Ui.dp(context,2).toFloat(); canvas.drawRect(r,ink)
+        ink.color=Color.WHITE; ink.style=Paint.Style.STROKE; ink.strokeWidth=Ui.dp(context,2).toFloat(); canvas.drawRect(r,ink)
         ink.strokeWidth=Ui.dp(context,1).toFloat(); for(i in 1..2) { canvas.drawLine(r.left+r.width()*i/3,r.top,r.left+r.width()*i/3,r.bottom,ink); canvas.drawLine(r.left,r.top+r.height()*i/3,r.right,r.top+r.height()*i/3,ink) }
         ink.style=Paint.Style.FILL
         listOf(r.left to r.top,r.right to r.top,r.right to r.bottom,r.left to r.bottom).forEach { canvas.drawCircle(it.first,it.second,Ui.dp(context,6).toFloat(),ink) }

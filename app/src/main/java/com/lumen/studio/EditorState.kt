@@ -10,7 +10,8 @@ data class TextLayer(val id: String = UUID.randomUUID().toString(), val text: St
     val startMs: Long = 0, val endMs: Long = 0, val animation: String? = "None", val font: String? = "Sans", val style: String? = "Bold", val animationOffsetMs: Long = 0,
     val alignment: String? = "Center", val rotation: Float = 0f, val opacity: Float? = 1f,
     val letterSpacing: Float = 0f, val lineSpacing: Float = 0f, val backgroundColor: Int = 0,
-    val outlineWidth: Float = 0f, val shadow: Boolean? = true) : Serializable { companion object { private const val serialVersionUID = 1L } }
+    val outlineWidth: Float = 0f, val shadow: Boolean? = true,
+    val bold: Boolean? = null, val italic: Boolean? = null, val underline: Boolean? = null, val backgroundPadding: Float? = null, val shadowStrength: Float? = null) : Serializable { companion object { private const val serialVersionUID = 1L } }
 data class ImageLayer(val id: String = UUID.randomUUID().toString(), val uri: String, val scale: Float = .3f,
     val x: Float = .6f, val y: Float = .6f, val opacity: Float = 1f, val startMs: Long = 0, val endMs: Long = 0, val flip: Boolean = false, val rotation: Float = 0f) : Serializable { companion object { private const val serialVersionUID = 1L } }
 data class SoundLayer(val id: String = UUID.randomUUID().toString(), val uri: String, val name: String,
@@ -30,7 +31,7 @@ data class EditorClip(
     val audioVolume: Float = 1f, val audioFadeInMs: Long = 0, val audioFadeOutMs: Long = 0, val hasAudio: Boolean? = null,
     val flipVertical: Boolean = false, val filterIntensity: Float = 1f, val exposure: Float = 0f, val temperature: Float = 0f, val tint: Float = 0f,
     val cropLeft: Float = -1f, val cropRight: Float = 1f, val cropBottom: Float = -1f, val cropTop: Float = 1f,
-    val speedPositions: List<Float>? = null, val visuals: List<VisualLayer>? = emptyList(), val curveImageDurationMs: Long? = null, val motion: String? = null, val motionDurationMs: Long? = 4000, val animations: ClipAnimationSettings? = null, val photoPanX: Float? = null, val photoPanY: Float? = null
+    val speedPositions: List<Float>? = null, val visuals: List<VisualLayer>? = emptyList(), val curveImageDurationMs: Long? = null, val motion: String? = null, val motionDurationMs: Long? = 4000, val animations: ClipAnimationSettings? = null, val photoPanX: Float? = null, val photoPanY: Float? = null, val cropRatio: String? = null
 ) : Serializable { companion object { private const val serialVersionUID = 1L } }
 
 data class EditorState(

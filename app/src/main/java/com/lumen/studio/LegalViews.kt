@@ -27,10 +27,7 @@ class TermsActivity: BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val root=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setBackgroundColor(StudioDesign.background(this@TermsActivity)) }
-        val header=LinearLayout(this).apply { gravity=Gravity.CENTER_VERTICAL; setPadding(Ui.dp(context,12),Ui.dp(context,8),Ui.dp(context,12),Ui.dp(context,8)) }
-        header.addView(StudioDesign.button(this,"←") { finish() }.apply { contentDescription="Back" },LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)))
-        header.addView(StudioDesign.label(this,"Terms & Conditions",22f,bold=true),LinearLayout.LayoutParams(0,-2,1f))
-        root.addView(header)
+        root.addView(StudioDesign.toolbar(this,"Terms & Conditions") { finish() })
         val policy=JSONObject(assets.open(if(AdminConnection.configured) "legal/terms-connected.json" else "legal/terms.json").bufferedReader().use { it.readText() })
         fun escape(s: String)=android.text.TextUtils.htmlEncode(s)
         fun css(color: Int)=String.format(java.util.Locale.US,"#%06X",color and 0xffffff)
@@ -62,9 +59,7 @@ class TermsActivity: BaseActivity() {
 class AboutUsView(activity: Activity,navigate: (String)->Unit): LinearLayout(activity) {
     init {
         orientation=VERTICAL; setBackgroundColor(StudioDesign.background(activity))
-        val header=LinearLayout(activity).apply { gravity=Gravity.CENTER_VERTICAL }
-        header.addView(StudioDesign.button(activity,"←") { navigate("settings") }.apply { contentDescription="Back" },LayoutParams(Ui.dp(activity,48),Ui.dp(activity,56)))
-        header.addView(StudioDesign.label(activity,"About Us",24f,bold=true)); addView(header)
+        addView(StudioDesign.toolbar(activity,"About Us") { navigate("settings") })
         val body=LinearLayout(activity).apply { orientation=VERTICAL; setPadding(Ui.dp(activity,24),Ui.dp(activity,16),Ui.dp(activity,24),Ui.dp(activity,24)) }
         listOf("Lumen Studio" to true,
             "A space for your next story. Lumen Studio brings video and photo editing to your phone, from your first clip to your finished export." to false,
@@ -78,7 +73,7 @@ class AboutUsView(activity: Activity,navigate: (String)->Unit): LinearLayout(act
 }
 
 object ContactUs {
-    fun show(activity: Activity) {
+    fun show(activity: Activity,onSent: ()->Unit = {}) {
         val ticketId=java.util.UUID.randomUUID().toString()
         val body=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL; setPadding(Ui.dp(activity,24),Ui.dp(activity,8),Ui.dp(activity,24),Ui.dp(activity,12)) }
         fun field(hintText: String,multiline: Boolean)=EditText(activity).apply {
@@ -107,7 +102,7 @@ object ContactUs {
                         AdminConnection.sendTicket(activity,ticketId,title,details) { result ->
                             if(activity.isDestroyed || !dialog.isShowing)return@sendTicket
                             send.isEnabled=true
-                            result.fold(onSuccess={dialog.dismiss();Toast.makeText(activity,"Message sent. Replies appear in Support inbox.",Toast.LENGTH_LONG).show()},onFailure={ description.error=it.message ?: "Message was not sent. Try again." })
+                            result.fold(onSuccess={dialog.dismiss();onSent();Toast.makeText(activity,"Message sent. Replies appear in Support inbox.",Toast.LENGTH_LONG).show()},onFailure={ description.error=it.message ?: "Message was not sent. Try again." })
                         }
                     }
                     BuildConfig.POLICY_PLACEHOLDER -> Toast.makeText(activity,"Support address is not configured. Nothing was sent.",Toast.LENGTH_LONG).show()

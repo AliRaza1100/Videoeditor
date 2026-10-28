@@ -32,6 +32,12 @@ object StudioDesign {
         button.background=if(AppPreferences.theme(c)=="gold") GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(0xFFEBC766.toInt(),0xFFC3962F.toInt())).apply { cornerRadius=Ui.dp(c,14).toFloat() } else shape(c,primary(c),14)
         button.setTextColor(primaryText(c))
     }
+    fun toolbar(c: Context,title: String,back: ()->Unit)=LinearLayout(c).apply {
+        gravity=Gravity.CENTER_VERTICAL
+        setPadding(Ui.dp(c,12),Ui.dp(c,8),Ui.dp(c,12),Ui.dp(c,8))
+        addView(studioIcon(c,R.drawable.ic_back,"Back",back).apply { background=null },LinearLayout.LayoutParams(Ui.dp(c,48),Ui.dp(c,48)))
+        addView(label(c,title,22f,bold=true).apply { setPaddingRelative(Ui.dp(c,12),0,0,0) },LinearLayout.LayoutParams(0,-2,1f))
+    }
     fun label(c: Context,value: String,size: Float=14f,secondary: Boolean=false,bold: Boolean=false)=AppText(c).apply {
         text=value; textSize=size; setTextColor(if(secondary) muted(c) else StudioDesign.text(c)); includeFontPadding=false
         if(bold) typeface=Typeface.create("sans-serif",Typeface.BOLD)

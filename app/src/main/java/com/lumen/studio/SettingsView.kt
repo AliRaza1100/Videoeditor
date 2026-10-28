@@ -96,15 +96,16 @@ class SettingsView(private val activity: Activity, private val navigate: (String
         divider(preferences)
         row(preferences,"Language","Select app language",R.drawable.ph_globe,mapOf("en" to "English","ur" to "اردو","hi" to "हिन्दी","zh" to "中文")[AppPreferences.language(activity)] ?: "English") { navigate("languages") }
         divider(preferences)
-        val notifications=toggle("Notifications",Reminders.enabled(activity)) { enabled ->
+        val notifications=toggle("Editing reminders",Reminders.enabled(activity)) { enabled ->
             if(enabled && android.os.Build.VERSION.SDK_INT>=33 && activity.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 Reminders.setEnabled(activity,false)
+                Reminders.configure(activity)
                 activity.requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),400)
             } else { Reminders.setEnabled(activity,enabled);Reminders.configure(activity) }
         }
-        row(preferences,"Notifications","Editing reminders and updates",R.drawable.ph_bell,control=notifications)
+        row(preferences,"Editing reminders","Remind me to edit every three hours",R.drawable.ph_bell,control=notifications) { notifications.toggle() }
         preferences.addView(LinearLayout(activity).apply {
-            gravity=Gravity.CENTER_VERTICAL;setPadding(dp(12),dp(11),dp(12),dp(11));background=rounded(if(gold) Color.rgb(250,245,235) else soft,14)
+            isClickable=true;isFocusable=true;contentDescription=Ui.t(activity,"Toggle editing reminders");setOnClickListener { notifications.toggle() };gravity=Gravity.CENTER_VERTICAL;setPadding(dp(12),dp(11),dp(12),dp(11));background=rounded(if(gold) Color.rgb(250,245,235) else soft,14)
             addView(SettingsClock(activity,accent),LayoutParams(dp(26),dp(26)))
             addView(copy("Optional editing reminders every three hours. Turn them off any time.",12f,muted=true).apply { setPaddingRelative(dp(12),0,0,0) },LayoutParams(0,-2,1f))
         },LayoutParams(-1,-2).apply { topMargin=dp(3) })
@@ -117,6 +118,7 @@ class SettingsView(private val activity: Activity, private val navigate: (String
         divider(support);row(support,"Terms & Conditions","Read our terms of service",R.drawable.ph_file_text) { navigate("terms") }
         divider(support);row(support,"About Us","Learn more about Lumen Studio",R.drawable.ph_question) { navigate("about") }
         divider(support);row(support,"App introduction","Features and how to use",R.drawable.ph_info) { navigate("introduction") }
+        divider(support);row(support,"Support inbox","Your support requests and replies",R.drawable.ph_envelope) { activity.startActivity(Intent(activity,SupportInboxActivity::class.java)) }
         divider(support);row(support,"Contact Us","Get in touch for support",R.drawable.ph_envelope) { navigate("contact") }
         val rating=LinearLayout(activity).apply {
             gravity=Gravity.CENTER_VERTICAL;setPadding(dp(13),dp(11),dp(13),dp(11));background=ripple(soft)
@@ -133,22 +135,12 @@ class SettingsView(private val activity: Activity, private val navigate: (String
         body.addView(support,LayoutParams(-1,-2).apply { topMargin=dp(12) })
         if(AdminConnection.configured) {
             val online=section("Connected services","Your choices and support conversations")
-            row(online,"Support inbox","Read replies to your support messages",R.drawable.ph_envelope) { activity.startActivity(Intent(activity,SupportInboxActivity::class.java)) }
-            divider(online)
             row(online,"Share usage analytics","Help improve Lumen Studio",R.drawable.ph_shield_check,control=toggle("Share usage analytics",AdminConnection.analyticsEnabled(activity)) { enabled ->
                 AdminConnection.setAnalytics(activity,enabled) { result ->
                     if(!activity.isDestroyed) result.exceptionOrNull()?.let { Toast.makeText(activity,"Choice saved. Server update failed; retry when connected: ${it.message}",Toast.LENGTH_LONG).show() }
                 }
             })
             online.addView(copy("Optional usage analytics sends an installation ID, device model/brand, Android API, density, configured locale/region and editing counters to the administrator. It never sends media, filenames or authored text. Turning it off requests deletion of usage history; support conversations remain until you delete online data.",12f,muted=true).apply { setPadding(dp(8),dp(8),dp(8),dp(12)) })
-            divider(online)
-            row(online,"Delete online data","Remove analytics and support conversations",R.drawable.ph_trash) {
-                AppDialog(activity).setTitle("Delete online data?").setMessage("Remove this installation's analytics and support conversations from the admin server. Local projects, photos and videos remain on this phone.")
-                    .setNegativeButton("Cancel",null).setPositiveButton("Delete") { _,_ -> AdminConnection.deleteOnlineData(activity) { result ->
-                        Toast.makeText(activity,if(result.isSuccess) "Online data deleted." else result.exceptionOrNull()?.message ?: "Unable to delete online data.",Toast.LENGTH_LONG).show()
-                        if(result.isSuccess && !activity.isDestroyed) navigate("settings")
-                    } }.show()
-            }
             body.addView(online,LayoutParams(-1,-2).apply { topMargin=dp(12) })
         }
         body.addView(copy("Lumen Studio · ${BuildConfig.VERSION_NAME}",12f,muted=true).apply { gravity=Gravity.CENTER;setPadding(0,dp(20),0,0) })

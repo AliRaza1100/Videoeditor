@@ -32,11 +32,11 @@ class ProjectsView(context: Context,private val navigate: (String)->Unit,private
         }
         addView(HorizontalScrollView(context).apply { isHorizontalScrollBarEnabled=false;addView(chips) },LayoutParams(-1,-2))
         val controls=LinearLayout(context).apply { gravity=Gravity.CENTER_VERTICAL;setPadding(dp(20),dp(6),dp(20),dp(14)) }
-        val sortButton=StudioDesign.button(context,"${Ui.t(context,"Sort")}: ${Ui.t(context,"Newest")}  ⌄") {}.apply { background=ui.card(radius=24);contentDescription=Ui.t(context,"Sort projects") }
+        val sortButton=StudioDesign.button(context,"${Ui.t(context,"Sort")}: ${Ui.t(context,"Newest")}") {}.apply { background=ui.card(radius=24);contentDescription=Ui.t(context,"Sort projects") }
         sortButton.setOnClickListener {
             val names=arrayOf("Newest","Oldest","Name","Duration")
             AppDialog(context).setTitle("Sort projects").setSingleChoiceItems(names,sort) { dialog,index ->
-                sort=index;sortButton.text="${Ui.t(context,"Sort")}: ${Ui.t(context,names[index])}  ⌄";render();dialog.dismiss()
+                sort=index;sortButton.text="${Ui.t(context,"Sort")}: ${Ui.t(context,names[index])}";render();dialog.dismiss()
             }.show()
         }
         controls.addView(sortButton,LayoutParams(-2,dp(44)))

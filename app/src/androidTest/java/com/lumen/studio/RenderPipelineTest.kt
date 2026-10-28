@@ -164,7 +164,7 @@ class RenderPipelineTest : InstrumentationTestCase() {
             return false
         } finally { try { decoder?.stop() } catch(_: Exception) {}; decoder?.release(); extractor.release() }
     }
-    private fun createVideo(file: File) {
+    internal fun createVideo(file: File,changingColors: Boolean=false) {
         val codec=MediaCodec.createEncoderByType("video/avc")
         val format=MediaFormat.createVideoFormat("video/avc",320,240).apply { setInteger(MediaFormat.KEY_COLOR_FORMAT,MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface); setInteger(MediaFormat.KEY_BIT_RATE,400000); setInteger(MediaFormat.KEY_FRAME_RATE,10); setInteger(MediaFormat.KEY_I_FRAME_INTERVAL,1) }
         codec.configure(format,null,null,MediaCodec.CONFIGURE_FLAG_ENCODE)
@@ -193,7 +193,7 @@ class RenderPipelineTest : InstrumentationTestCase() {
             error("Fixture encoder timed out")
         }
         try {
-            repeat(30) { frame -> GLES20.glViewport(0,0,320,240); GLES20.glClearColor(1f,0f,0f,1f); GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+            repeat(30) { frame -> GLES20.glViewport(0,0,320,240); GLES20.glClearColor(if(!changingColors || frame<10) 1f else 0f,if(changingColors && frame in 10..19) 1f else 0f,if(changingColors && frame>=20) 1f else 0f,1f); GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
                 EGLExt.eglPresentationTimeANDROID(display,eglSurface,frame*100000000L); check(EGL14.eglSwapBuffers(display,eglSurface)); drain(false) }
             codec.signalEndOfInputStream(); drain(true)
         } finally {

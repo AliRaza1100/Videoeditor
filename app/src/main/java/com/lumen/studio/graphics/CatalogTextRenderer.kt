@@ -34,7 +34,8 @@ object CatalogTextRenderer {
     fun draw(canvas: Canvas,layer: TextLayer,w: Int,h: Int,timeMs: Long) {
         if(timeMs<layer.startMs || (layer.endMs>0 && timeMs>=layer.endMs) || w<=0 || h<=0 || layer.text.isEmpty()) return
         val catalog=GraphicsCatalog.current ?: error("Install graphics catalog before drawing")
-        val style=catalog.type(layer.style) ?: catalog.type("Regular") ?: error("Missing Regular typography")
+        val base=catalog.type(layer.style) ?: catalog.type("Regular") ?: error("Missing Regular typography")
+        val style=base.copy(weight=layer.bold?.let { if(it) 700 else 400 } ?: base.weight,italic=layer.italic ?: base.italic,underline=layer.underline ?: base.underline)
         val pose=catalog.animation(layer.animation)?.pose((timeMs-layer.startMs+layer.animationOffsetMs).coerceAtLeast(0)) ?: OverlayPose()
         val content=layer.text.take(20_000)
         val family=if(layer.font==null || layer.font=="Sans") style.family else catalog.fonts[layer.font] ?: style.family
@@ -58,7 +59,7 @@ object CatalogTextRenderer {
             canvas.rotate(layer.rotation+pose.rotation); canvas.scale(pose.scaleX,pose.scaleY)
             canvas.translate(-layout.width/2f,-layout.height/2f)
             val alpha=((layer.opacity ?: 1f).coerceIn(0f,1f)*pose.alpha*255).toInt()
-            val margin=(style.padding+maxOf(style.glowRadius,layer.outlineWidth,style.strokeWidth)+4)*scale
+            val margin=(maxOf(style.padding,layer.backgroundPadding ?: 0f)+maxOf(style.glowRadius,layer.outlineWidth,style.strokeWidth)+4)*scale
             canvas.saveLayerAlpha(-margin,-margin,layout.width+margin,layout.height+margin,alpha)
             if(pose.reveal<1f) {
                 val end=content.offsetByCodePoints(0,(content.codePointCount(0,content.length)*pose.reveal).toInt())
@@ -72,13 +73,15 @@ object CatalogTextRenderer {
             }
             val background=if(layer.backgroundColor!=0) layer.backgroundColor else style.background
             if(Color.alpha(background)>0) {
-                resources.background.color=background; val padding=style.padding*scale
-                canvas.drawRoundRect(-padding,-padding,layout.width+padding,layout.height+padding,8*scale,8*scale,resources.background)
+                resources.background.color=background; val padding=(layer.backgroundPadding ?: maxOf(6f,style.padding)).coerceIn(0f,40f)*scale
+                var left=layout.width.toFloat();var right=0f
+                for(line in 0 until layout.lineCount) { left=minOf(left,layout.getLineLeft(line));right=maxOf(right,layout.getLineRight(line)) }
+                canvas.drawRoundRect(left-padding,-padding,right+padding,layout.height+padding,8*scale,8*scale,resources.background)
             }
             paint.clearShadowLayer(); paint.style=Paint.Style.FILL; paint.color=layer.color
             if(layer.shadow!=false) {
-                if(style.glowRadius>0) paint.setShadowLayer(style.glowRadius*scale,0f,0f,style.glowColor)
-                else paint.setShadowLayer(3*scale,scale,2*scale,Color.BLACK)
+                if(style.glowRadius>0) paint.setShadowLayer(style.glowRadius*scale,0f,0f,Color.argb((Color.alpha(style.glowColor)*(layer.shadowStrength ?: 1f).coerceIn(0f,1f)).toInt(),Color.red(style.glowColor),Color.green(style.glowColor),Color.blue(style.glowColor)))
+                else paint.setShadowLayer(3*scale,scale,2*scale,Color.argb(((layer.shadowStrength ?: 1f).coerceIn(0f,1f)*255).toInt(),0,0,0))
             }
             val stroke=maxOf(layer.outlineWidth,style.strokeWidth)*scale
             if(stroke>0) {

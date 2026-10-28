@@ -30,9 +30,12 @@ object TextPresets {
         val paint=TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color=layer.color; textSize=layer.size*(w/360f)
             typeface=Typeface.create(when(layer.font) { "Serif" -> "serif"; "Monospace" -> "monospace"; "Condensed" -> "sans-serif-condensed"; "Casual" -> "casual"; "Cursive" -> "cursive"; else -> "sans-serif" },when(layer.style) { "Regular","Underline","Strikethrough" -> Typeface.NORMAL; "Italic" -> Typeface.ITALIC; "Bold italic" -> Typeface.BOLD_ITALIC; else -> Typeface.BOLD })
-            isUnderlineText=layer.style=="Underline"; isStrikeThruText=layer.style=="Strikethrough"
+            val bold=layer.bold ?: (layer.style !in listOf("Regular","Underline","Strikethrough","Italic"))
+            val italic=layer.italic ?: (layer.style in listOf("Italic","Bold italic"))
+            typeface=Typeface.create(typeface,if(bold && italic) Typeface.BOLD_ITALIC else if(bold) Typeface.BOLD else if(italic) Typeface.ITALIC else Typeface.NORMAL)
+            isUnderlineText=layer.underline ?: (layer.style=="Underline"); isStrikeThruText=layer.style=="Strikethrough"
             letterSpacing=layer.letterSpacing
-            if(layer.shadow!=false) setShadowLayer(3f,1f,2f,Color.BLACK)
+            if(layer.shadow!=false) setShadowLayer(3f,1f,2f,Color.argb(((layer.shadowStrength ?: 1f).coerceIn(0f,1f)*255).toInt(),0,0,0))
         }
         val alignment=when(layer.alignment) { "Left" -> Layout.Alignment.ALIGN_NORMAL; "Right" -> Layout.Alignment.ALIGN_OPPOSITE; else -> Layout.Alignment.ALIGN_CENTER }
         val layout=StaticLayout.Builder.obtain(content,0,content.length,paint,(w*.9).toInt().coerceAtLeast(1)).setAlignment(alignment).setLineSpacing(layer.lineSpacing*w/360f,1f).build()
@@ -45,7 +48,12 @@ object TextPresets {
         canvas.rotate(layer.rotation)
         if(layer.animation=="Pop" || layer.animation=="Zoom") { val scale=if(layer.animation=="Zoom") .2f+.8f*progress else .5f+.5f*progress; canvas.scale(scale,scale) }
         canvas.translate(-layout.width/2f,-layout.height/2f)
-        if(layer.style=="Subtitle" || layer.backgroundColor!=0) canvas.drawRoundRect(RectF(-8f,-4f,layout.width+8f,layout.height+4f),8f,8f,Paint().apply { color=if(layer.backgroundColor!=0) layer.backgroundColor else Color.argb(180,0,0,0) })
+        if(layer.style=="Subtitle" || layer.backgroundColor!=0) {
+            var left=layout.width.toFloat();var right=0f
+            for(line in 0 until layout.lineCount) { left=minOf(left,layout.getLineLeft(line));right=maxOf(right,layout.getLineRight(line)) }
+            val padding=(layer.backgroundPadding ?: 8f).coerceIn(0f,40f)*w/360f
+            canvas.drawRoundRect(RectF(left-padding,-padding,right+padding,layout.height+padding),8f,8f,Paint().apply { color=if(layer.backgroundColor!=0) layer.backgroundColor else Color.argb(180,0,0,0) })
+        }
         if(layer.style=="Outline" || layer.outlineWidth>0) { val fill=paint.color; paint.color=Color.BLACK; paint.style=Paint.Style.STROKE; paint.strokeWidth=(if(layer.outlineWidth>0) layer.outlineWidth else 3f)*w/360f; layout.draw(canvas); paint.style=Paint.Style.FILL; paint.color=fill }
         layout.draw(canvas); canvas.restore(); canvas.restore()
     }

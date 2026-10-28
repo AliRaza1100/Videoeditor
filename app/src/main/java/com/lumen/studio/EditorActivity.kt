@@ -157,7 +157,7 @@ class EditorActivity : BaseActivity() {
         sourceMute=SourceMuteView(this).apply { setOnClickListener { toggleSourceMute() } }
 
         val controls=LinearLayout(this).apply { gravity=Gravity.CENTER_VERTICAL; setPadding(dp(8),0,dp(8),0) }
-        controls.addView(sourceMute,LinearLayout.LayoutParams(dp(48),dp(44)))
+
         play=button("▶") { if(!preparing && state.clips.isNotEmpty()) { if(player==null) { playAfterRefresh=true; refreshPreview() } else player?.let { if(it.isPlaying) it.pause() else { lastTimelineScrub=0; if(it.playbackState==Player.STATE_ENDED) it.seekTo(0); it.play() } } } }.apply { background=null; setTextColor(green); textSize=22f; contentDescription="Play or pause" }
         controls.addView(play,LinearLayout.LayoutParams(dp(44),dp(44))); time=label("00:00 / 00:00",10f).apply { maxLines=1 }; controls.addView(time,LinearLayout.LayoutParams(dp(102),-2))
         seek=SeekBar(this).apply {
@@ -168,7 +168,7 @@ class EditorActivity : BaseActivity() {
             })
         }
         musicMute=studioIcon(this,R.drawable.ph_music_notes,"Mute soundtrack") { commit(state.copy(musicMuted=state.musicMuted!=true)) }
-        controls.addView(musicMute,LinearLayout.LayoutParams(dp(48),dp(44)))
+
         controls.addView(seek,LinearLayout.LayoutParams(0,dp(44),1f)); previewColumn.addView(controls,LinearLayout.LayoutParams(-1,dp(44)))
         historyBar=LinearLayout(this).apply { gravity=Gravity.CENTER_VERTICAL; contentDescription="Timeline controls" }
         historyBar.addView(undo,LinearLayout.LayoutParams(dp(48),dp(44)))
@@ -187,7 +187,7 @@ class EditorActivity : BaseActivity() {
             addView(View(this@EditorActivity).apply { setBackgroundColor(green); importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO },FrameLayout.LayoutParams(dp(1),-1,Gravity.CENTER_HORIZONTAL))
             addView(label("▼",10f).apply { setTextColor(green); gravity=Gravity.CENTER; importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO },FrameLayout.LayoutParams(dp(20),dp(16),Gravity.TOP or Gravity.CENTER_HORIZONTAL))
         }
-        timelineFrame.addView(timelineLabels,FrameLayout.LayoutParams(dp(36),-2,Gravity.LEFT or Gravity.TOP))
+        timelineFrame.addView(timelineLabels,FrameLayout.LayoutParams(dp(48),-2,Gravity.LEFT or Gravity.TOP))
         timelineScroll.setOnScrollChangeListener { _,_,y,_,_ -> timelineLabels.translationY=-y.toFloat() }
         timelineHorizontal.setOnScrollChangeListener { _,x,_,_,_ ->
             if(!timelineSync && !preparing && state.clips.isNotEmpty() && (timelineTouching || System.currentTimeMillis()-lastTimelineScrub<250)) {
@@ -433,11 +433,11 @@ class EditorActivity : BaseActivity() {
         if(::stillPreview.isInitialized && (stillPreview.layoutParams.width!=w || stillPreview.layoutParams.height!=h)) stillPreview.layoutParams=FrameLayout.LayoutParams(w,h,Gravity.CENTER)
     }
     private var applyingTimelineCurve=false
-    private fun commit(next: EditorState) {
+    private fun commit(next: EditorState,position: Long?=null) {
         if(next==state) return
         fun timing(c: EditorClip)=listOf(c.id,c.startMs,c.endMs,c.speed,c.speedCurve,c.speedPositions,c.imageDurationMs)
         val resolved=if(!applyingTimelineCurve && next.clips.map(::timing)!=state.clips.map(::timing)) next.copy(projectSpeedPositions=null,projectSpeedValues=null) else next
-        pause(); history.change(resolved); changed()
+        pause();if(position!=null) savedPosition=position; history.change(resolved); changed()
     }
     private fun edit(action: (EditorClip) -> EditorClip) { if(state.clips.isNotEmpty()) commit(ClipEdits.update(state,action)) }
     private fun changed() { savedPosition=TimelineBounds.position(state,savedPosition); seek.max=TimelineBounds.duration(state).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(); validateSelection(); saveDraft(); updateTimeline(); updateToolbar(); refreshPreview() }
@@ -447,7 +447,7 @@ class EditorActivity : BaseActivity() {
     private fun updateSourceMute() {
         if(!::sourceMute.isInitialized) return
         val c=state.clips.getOrNull(state.active)
-        sourceMute.visibility=if(c?.video==true) View.VISIBLE else View.GONE
+        sourceMute.visibility=if(c?.video==true) View.VISIBLE else View.INVISIBLE
         sourceMute.isEnabled=c?.hasAudio!=false && c!=null
         sourceMute.alpha=if(sourceMute.isEnabled) 1f else .4f
         sourceMute.muted=c?.muted==true
@@ -476,7 +476,7 @@ class EditorActivity : BaseActivity() {
         return c.video && input.ratio=="Fit" && input.projectSounds.orEmpty().isEmpty() && input.projectTexts.orEmpty().isEmpty() && input.projectOverlays.orEmpty().isEmpty() && input.projectVisuals.orEmpty().isEmpty() &&
             c.sounds.isEmpty() && c.texts.isEmpty() && c.overlays.isEmpty() && c.filter=="Original" && c.effect=="None" && c.visuals.orEmpty().isEmpty() && !c.reverse &&
             c.animations==null && c.motion.isNullOrBlank() && c.speed==1f && c.speedCurve.orEmpty().isEmpty() && c.rotation==0f && c.zoom==1f && !c.flip && !c.flipVertical && c.opacity==1f &&
-            c.brightness==0f && c.contrast==1f && c.saturation==1f && c.exposure==0f && c.temperature==0f && c.tint==0f &&
+            c.catalogAdjustments.orEmpty().values.all { it==0f } && c.brightness==0f && c.contrast==1f && c.saturation==1f && c.exposure==0f && c.temperature==0f && c.tint==0f &&
             c.cropLeft== -1f && c.cropRight==1f && c.cropBottom== -1f && c.cropTop==1f && c.audioFadeInMs==0L && c.audioFadeOutMs==0L && c.audioVolume in 0f..1f
     }
     private fun refreshPreview() {
@@ -604,9 +604,16 @@ class EditorActivity : BaseActivity() {
     private fun updateTimeline() {
         if(!::timeline.isInitialized) return
         timelineSync=true; timeline.removeAllViews(); timelineLabels.removeAllViews()
-        timelineLabels.addView(View(this),LinearLayout.LayoutParams(dp(36),dp(18)))
-        fun laneIcon(resource: Int,label: String,height: Int) { timelineLabels.addView(studioIcon(this,resource,label).apply { setPadding(dp(7),dp(7),dp(7),dp(7)); background=null },LinearLayout.LayoutParams(dp(36),dp(height))) }
-        laneIcon(R.drawable.ph_film_strip,"Video track",66)
+        timelineLabels.addView(View(this),LinearLayout.LayoutParams(dp(48),dp(18)))
+        fun laneIcon(resource: Int,label: String,height: Int) {
+            val icon=if(resource==R.drawable.ph_music_notes && label=="Music track") {
+                if(musicMute.parent==null) musicMute else studioIcon(this,if(state.musicMuted==true) R.drawable.ph_speaker_slash else R.drawable.ph_music_notes,if(state.musicMuted==true) "Unmute soundtrack" else "Mute soundtrack") { commit(state.copy(musicMuted=state.musicMuted!=true)) }
+            } else studioIcon(this,resource,label,if(resource==R.drawable.ph_music_notes) ({ openSounds() }) else null)
+            icon.setPadding(dp(12),dp(12),dp(12),dp(12));icon.background=null
+            timelineLabels.addView(icon,LinearLayout.LayoutParams(dp(48),dp(height)))
+        }
+        (sourceMute.parent as? ViewGroup)?.removeView(sourceMute)
+        timelineLabels.addView(sourceMute,LinearLayout.LayoutParams(dp(48),dp(66)))
         val viewport=timelineHorizontal.width.takeIf { it>0 } ?: (resources.displayMetrics.widthPixels/if(landscape) 2 else 1)
         val lead=viewport/2; val total=TimelineBounds.duration(state); val content=maxOf(1,(total*pxPerMs).toInt())
         val whole=content+lead*2
@@ -691,6 +698,12 @@ class EditorActivity : BaseActivity() {
             timeline.addView(it.first,LinearLayout.LayoutParams(whole,dp(54)))
             val label=it.first.contentDescription.toString()
             laneIcon(when(label) { "Music track" -> R.drawable.ph_music_notes; "Filter track" -> R.drawable.ph_funnel; "Effect track" -> R.drawable.ph_sparkle; "Text track" -> R.drawable.ph_pencil_simple; else -> R.drawable.ph_image },label,54)
+        }
+        run {
+            val add=FrameLayout(this)
+            add.addView(button("＋ Add sound") { openSounds() },FrameLayout.LayoutParams(dp(144),dp(48)).apply { leftMargin=lead })
+            timeline.addView(add,LinearLayout.LayoutParams(whole,dp(54)))
+            laneIcon(R.drawable.ph_music_notes,"Add sound",54)
         }
         timeline.addView(View(this),LinearLayout.LayoutParams(whole,dp(6)))
         Ui.style(timeline); timelineSync=false; timelineHorizontal.post { syncTimeline(TimelineBounds.position(state,player?.currentPosition ?: savedPosition)) }; updateToolbar(); updateSourceMute()
@@ -818,7 +831,7 @@ class EditorActivity : BaseActivity() {
             for(i in 0 until row.childCount) {
                 val card=row.getChildAt(i) as LinearLayout
                 card.isSelected=card.tag==(selected(a) ?: "none")
-                card.foreground=GradientDrawable().apply { setColor(Color.TRANSPARENT); if(card.isSelected) setStroke(dp(2),StudioDesign.accent(this@EditorActivity)) }
+                selectStudioCard(card,card.isSelected)
                 (card.getChildAt(1) as TextView).text="${card.contentDescription.toString().substringAfter(": ")}\n${seconds(duration(a))}"
             }
         }
@@ -948,9 +961,9 @@ class EditorActivity : BaseActivity() {
             categories.getValue(category).forEach { name ->
                 val card=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER; contentDescription="$title preset: $name"; isClickable=true }
                 card.addView(TextPresetThumbnail(this,title,name),LinearLayout.LayoutParams(dp(108),dp(96)))
-                card.addView(label(name,13f).apply { gravity=Gravity.CENTER; maxLines=2 },LinearLayout.LayoutParams(dp(116),dp(38)))
-                card.setOnClickListener { action(name); for(i in 0 until cards.childCount) cards.getChildAt(i).foreground=GradientDrawable().apply { setColor(Color.TRANSPARENT); if(cards.getChildAt(i)===card) setStroke(dp(2),Ui.foreground(this@EditorActivity,green)) } }
-                cards.addView(card,LinearLayout.LayoutParams(dp(124),dp(142)))
+                card.addView(label(name,12f).apply { gravity=Gravity.CENTER;maxLines=3;tooltipText=name },LinearLayout.LayoutParams(dp(132),dp(54)))
+                card.setOnClickListener { action(name); for(i in 0 until cards.childCount) selectStudioCard(cards.getChildAt(i),cards.getChildAt(i)===card) }
+                cards.addView(card,LinearLayout.LayoutParams(dp(144),dp(156)).apply { marginEnd=dp(10) })
             }
         }
         categories.keys.forEach { category -> tabs.addView(button(category) { display(category) },LinearLayout.LayoutParams(dp(88),dp(44))) }
@@ -966,27 +979,31 @@ class EditorActivity : BaseActivity() {
         val categories=if(effects) EditorPresets.effects else EditorPresets.filters
         val body=panelColumn(); val categoryRow=LinearLayout(this); val cards=LinearLayout(this)
         val source=clip
+        val kind=if(effects) "effect" else "filter"
+        val active=state.projectVisuals.orEmpty().lastOrNull { it.kind==kind && savedPosition>=it.startMs && savedPosition<it.endMs }?.name ?: if(effects) clip.effect else clip.filter
+        val selectedName=(if(effects) com.lumen.studio.graphics.GraphicsCatalog.current?.effect(active) else null)?.info?.name ?: (if(!effects) com.lumen.studio.graphics.GraphicsCatalog.current?.filter(active) else null)?.info?.name ?: active
+        val initialCategory=categories.entries.firstOrNull { selectedName in it.value }?.key ?: categories.keys.first()
         fun display(category: String) {
             cards.removeAllViews()
             val values=listOf(if(effects) "None" else "Original")+categories.getValue(category)
             values.distinct().forEach { name ->
-                val card=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER; contentDescription=name; isClickable=true }
+                val card=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER; contentDescription=name;tag=name;isFocusable=true;isClickable=true;background=StudioDesign.shape(this@EditorActivity,StudioDesign.surface(this@EditorActivity),12,true) }
                 val image=PresetThumbnail(this,name,effects)
                 PreviewImages.load(this,source.uri,source.video,image,source.startMs.toLong())
                 card.addView(image,LinearLayout.LayoutParams(dp(108),dp(96)))
-                card.addView(label(name,13f).apply { gravity=Gravity.CENTER; maxLines=2 },LinearLayout.LayoutParams(dp(116),dp(38)))
+                card.addView(label(name,12f).apply { gravity=Gravity.CENTER;maxLines=3;tooltipText=name },LinearLayout.LayoutParams(dp(132),dp(54)))
                 card.setOnClickListener {
                     applyVisual(if(effects) "effect" else "filter",name,savedPosition)
-                    for(i in 0 until cards.childCount) cards.getChildAt(i).foreground=GradientDrawable().apply { setColor(Color.TRANSPARENT); cornerRadius=dp(12).toFloat(); if(cards.getChildAt(i)===card) setStroke(dp(2),green) }
+                    for(i in 0 until cards.childCount) selectStudioCard(cards.getChildAt(i),cards.getChildAt(i)===card)
                 }
                 dragSource(card,if(effects) "effect" else "filter",clip.id,name)
-                cards.addView(card,LinearLayout.LayoutParams(dp(124),dp(142)))
+                cards.addView(card,LinearLayout.LayoutParams(dp(144),dp(156)).apply { marginEnd=dp(10) });selectStudioCard(card,name==selectedName)
             }
         }
-        categories.keys.forEach { category -> categoryRow.addView(button(category) { display(category) },LinearLayout.LayoutParams(dp(82),dp(44))) }
+        categories.keys.forEach { category -> categoryRow.addView(button(category) { display(category);for(i in 0 until categoryRow.childCount) selectStudioCard(categoryRow.getChildAt(i),categoryRow.getChildAt(i).tag==category) }.apply { tag=category;selectStudioCard(this,category==initialCategory);setPadding(dp(14),0,dp(14),0) },LinearLayout.LayoutParams(-2,dp(48)).apply { marginEnd=dp(8) }) }
         body.addView(HorizontalScrollView(this).apply { addView(categoryRow); isHorizontalScrollBarEnabled=false })
         body.addView(HorizontalScrollView(this).apply { addView(cards); isHorizontalScrollBarEnabled=false })
-        display(categories.keys.first()); showPanel(if(effects) "Effects" else "Filters",body)
+        display(initialCategory); showPanel(if(effects) "Effects" else "Filters",body)
     }
     private fun ratioPanel() {
         val body=panelColumn(); val row=LinearLayout(this)
@@ -996,8 +1013,8 @@ class EditorActivity : BaseActivity() {
                 private val paint=Paint(Paint.ANTI_ALIAS_FLAG).apply { style=Paint.Style.STROKE; strokeWidth=dp(2).toFloat(); color=green }
                 override fun onDraw(canvas: Canvas) { val parts=ratio.split(':'); val r=if(parts.size==2) parts[0].toFloat()/parts[1].toFloat() else 1f; val w=minOf(width*.65f,height*.75f*r); val h=w/r; canvas.drawRoundRect((width-w)/2,(height-h)/2,(width+w)/2,(height+h)/2,dp(3).toFloat(),dp(3).toFloat(),paint) }
             },LinearLayout.LayoutParams(dp(64),dp(64)))
-            card.addView(label(ratio).apply { gravity=Gravity.CENTER }); card.setOnClickListener { commit(state.copy(ratio=ratio)) }
-            row.addView(card,LinearLayout.LayoutParams(dp(72),dp(96)))
+            card.addView(label(ratio).apply { gravity=Gravity.CENTER });selectStudioCard(card,state.ratio==ratio);card.tag=ratio;card.background=StudioDesign.shape(this,StudioDesign.surface(this),12,true); card.setOnClickListener { commit(state.copy(ratio=ratio));for(i in 0 until row.childCount) selectStudioCard(row.getChildAt(i),row.getChildAt(i).tag==ratio) }
+            row.addView(card,LinearLayout.LayoutParams(dp(88),dp(108)).apply { marginEnd=dp(10) })
         }
         body.addView(HorizontalScrollView(this).apply { addView(row) }); showPanel("Canvas ratio",body)
     }
@@ -1008,7 +1025,7 @@ class EditorActivity : BaseActivity() {
         cropView=overlay; preview.addView(overlay,FrameLayout.LayoutParams(-1,-1)); fullscreenControl.bringToFront()
         overlay.onGestureStart={ history.beginGroup() }; overlay.onGestureEnd={ history.endGroup() }
         val body=panelColumn(); val presets=LinearLayout(this)
-        listOf("Freeform","1:1","9:16","16:9","4:5","3:4").forEach { name -> presets.addView(button(name) { if(name=="Freeform") overlay.reset() else { val parts=name.split(':').map { it.toFloat() }; overlay.setRatio(parts[0]/parts[1]) } },LinearLayout.LayoutParams(dp(72),dp(44))) }
+        listOf("Freeform","1:1","9:16","16:9","4:5","3:4").forEach { name -> presets.addView(button(name) { for(i in 0 until presets.childCount) selectStudioCard(presets.getChildAt(i),presets.getChildAt(i).tag==name);edit { it.copy(cropRatio=name) };if(name=="Freeform") overlay.reset() else { val parts=name.split(':').map { it.toFloat() }; overlay.setRatio(parts[0]/parts[1]) } }.apply { tag=name;selectStudioCard(this,name==(source.cropRatio ?: "Freeform")) },LinearLayout.LayoutParams(dp(80),dp(48)).apply { marginEnd=dp(8) }) }
         body.addView(HorizontalScrollView(this).apply { addView(presets); isHorizontalScrollBarEnabled=false }); body.addView(button("Reset") { overlay.reset() })
         overlay.onCropChanged={ r -> if(overlay.image!=null && cropView===overlay) edit { it.copy(cropLeft=r.left*2-1,cropRight=r.right*2-1,cropTop=1-r.top*2,cropBottom=1-r.bottom*2,zoom=1f) } }
         showPanel("Crop",body)
@@ -1023,26 +1040,41 @@ class EditorActivity : BaseActivity() {
                     contentResolver.openInputStream(Uri.parse(source.uri))?.use { BitmapFactory.decodeStream(it,null,BitmapFactory.Options().apply { inSampleSize=(maxOf(bounds.outWidth,bounds.outHeight)/1024).coerceAtLeast(1) }) }
                 }
             } catch(_: Exception) { null }
-            runOnUiThread { if(isDestroyed || cropView!==overlay) bitmap?.recycle() else if(bitmap!=null) overlay.image=bitmap else status.text="Unable to load crop preview" }
+            runOnUiThread { if(isDestroyed || cropView!==overlay) bitmap?.recycle() else if(bitmap!=null) { overlay.image=bitmap;overlay.restoreRatio(clip.cropRatio) } else status.text="Unable to load crop preview" }
         }
+    }
+    private fun adjustmentPanel() {
+        val body=panelColumn()
+        val controls=listOf("Brightness","Contrast","Saturation","Exposure","Temperature","Tint","Sharpness")
+        controls.forEach { name ->
+            val block=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL;setPadding(dp(12),dp(10),dp(12),dp(10));background=StudioDesign.shape(this@EditorActivity,StudioDesign.surface(this@EditorActivity),12,true) }
+            val heading=LinearLayout(this).apply { gravity=Gravity.CENTER_VERTICAL }
+            fun current()=when(name) { "Brightness" -> clip.brightness.toInt();"Contrast" -> ((clip.contrast-1)*100).toInt();"Saturation" -> ((clip.saturation-1)*100).toInt();"Exposure" -> (clip.exposure*100).toInt();"Temperature" -> (clip.temperature*100).toInt();"Tint" -> (clip.tint*100).toInt();else -> ((clip.catalogAdjustments.orEmpty()["video.sharpness"] ?: 0f)*100).toInt() }
+            val value=label("$name · ${current()}",13f)
+            heading.addView(value,LinearLayout.LayoutParams(0,-2,1f))
+            val bar=SeekBar(this).apply { max=if(name=="Sharpness") 100 else 200;progress=if(name=="Sharpness") current() else current()+100;contentDescription=name }
+            fun apply(v: Int) { edit { when(name) { "Brightness" -> it.copy(brightness=v.toFloat());"Contrast" -> it.copy(contrast=1+v/100f);"Saturation" -> it.copy(saturation=1+v/100f);"Exposure" -> it.copy(exposure=v/100f);"Temperature" -> it.copy(temperature=v/100f);"Tint" -> it.copy(tint=v/100f);else -> it.copy(catalogAdjustments=it.catalogAdjustments.orEmpty()+ ("video.sharpness" to v/100f)) } };value.text="${Ui.t(this,name)} · $v" }
+            heading.addView(button("Reset") { apply(0);bar.progress=if(name=="Sharpness") 0 else 100 },LinearLayout.LayoutParams(dp(64),dp(44)))
+            block.addView(heading);block.addView(bar,LinearLayout.LayoutParams(-1,dp(48)))
+            bar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(view: SeekBar?,p: Int,user: Boolean) { if(user) apply(if(name=="Sharpness") p else p-100) }
+                override fun onStartTrackingTouch(view: SeekBar?) { history.beginGroup() }
+                override fun onStopTrackingTouch(view: SeekBar?) { history.endGroup() }
+            })
+            body.addView(block,LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=dp(10) })
+        }
+        showPanel("Adjust",body)
     }
     private fun tool(name: String) {
         when(name) {
-            "Adjust" -> choices("Adjust",listOf("Brightness","Contrast","Saturation","Exposure","Temperature","Tint","Reset")) { kind ->
-                val names=listOf("Brightness","Contrast","Saturation","Exposure","Temperature","Tint")
-                if(kind==6) edit { it.copy(brightness=0f,contrast=1f,saturation=1f,exposure=0f,temperature=0f,tint=0f) }
-                else {
-                    val value=when(kind) { 0 -> (clip.brightness+100).toInt(); 1 -> (clip.contrast*100).toInt(); 2 -> (clip.saturation*100).toInt(); 3 -> (clip.exposure*50+100).toInt(); 4 -> (clip.temperature*100+100).toInt(); else -> (clip.tint*100+100).toInt() }
-                    slider(names[kind],0,200,value) { v -> edit { when(kind) { 0 -> it.copy(brightness=v-100f); 1 -> it.copy(contrast=v/100f); 2 -> it.copy(saturation=v/100f); 3 -> it.copy(exposure=(v-100)/50f); 4 -> it.copy(temperature=(v-100)/100f); else -> it.copy(tint=(v-100)/100f) } } }
-                }
-            }
+            "Adjust" -> adjustmentPanel()
             "Stickers" -> choices("Stickers",listOf("★","♥","✦","☀")) { index -> edit { it.copy(texts=it.texts+TextLayer(text=listOf("★","♥","✦","☀")[index],size=48f)) } }
             "Canvas","Ratio" -> ratioPanel()
             "Background" -> choices("Background",listOf("Black","White","Green","Charcoal")) { commit(state.copy(background=listOf(Color.BLACK,Color.WHITE,green,Color.rgb(30,32,37))[it])) }
             "Rotate" -> visualChoices("Rotate",linkedMapOf("Rotation" to listOf("0","90","180","270"))) { value -> edit { it.copy(rotation=value.toFloat()) } }; "Crop" -> cropTool()
             "Opacity" -> slider("Opacity (%)",0,100,(clip.opacity*100).toInt()) { value -> edit { it.copy(opacity=value/100f) } }; "Flip" -> choices("Flip",listOf("Horizontal","Vertical")) { index -> edit { if(index==0) it.copy(flip=!it.flip) else it.copy(flipVertical=!it.flipVertical) } }
             "Speed" -> if(clip.video) choices("Playback speed",listOf("Normal speed","Curve speed","Timeline curve speed")) { kind ->
-                if(kind==0) slider("Playback speed (%)",25,400,(clip.speed*100).toInt()) { value -> edit { it.copy(speed=value/100f,speedCurve=emptyList(),speedPositions=null) } }
+                if(kind==0) slider("Playback speed (%)",25,400,(clip.speed*100).toInt()) { value -> changeClipSpeed { it.copy(speed=value/100f,speedCurve=emptyList(),speedPositions=null) } }
                 else curveSpeed(kind==2)
             } else number("Image duration (seconds)",clip.imageDurationMs/1000f,.1f,3600f) { value -> edit { it.copy(imageDurationMs=(value*1000).toLong(),curveImageDurationMs=null) } }
 
@@ -1053,13 +1085,27 @@ class EditorActivity : BaseActivity() {
             "Replace" -> gallery(if(clip.video) "video" else "photo",504,"Replace media")
         }
     }
+    private fun changeClipSpeed(action: (EditorClip)->EditorClip) {
+        val source=ClipEdits.sourcePosition(clip,selectedPosition())
+        val next=action(clip)
+        val start=state.clips.take(state.active).sumOf { ClipEdits.duration(it) }
+        val position=start+ClipEdits.outputPosition(next,(source-next.startMs).toDouble()).toLong()
+        commit(ClipEdits.update(state) { next },position)
+    }
     private fun curveSpeed(entireTimeline: Boolean=false) {
         val body=panelColumn()
         body.addView(label("Tap to add dots. Drag sideways for time, up/down for speed. Hold an interior dot to remove it.",13f))
+        val summary=label("",12f)
         val graph=SpeedCurveView(this,if(entireTimeline) TimelineSpeed.profile(state) else clip) { positions,speeds ->
             if(entireTimeline) { applyingTimelineCurve=true; try { commit(TimelineSpeed.apply(state,positions,speeds)) } finally { applyingTimelineCurve=false } }
-            else edit { it.copy(speed=1f,speedCurve=speeds,speedPositions=positions) }
+            else changeClipSpeed { it.copy(speed=1f,speedCurve=speeds,speedPositions=positions) }
+            summary.text="${Ui.t(this,"Playback duration")}: ${if(entireTimeline) TimelineBounds.duration(state) else ClipEdits.duration(clip)} ms · ${Ui.t(this,"Full source content is preserved")}"
         }
+        val rates=LinearLayout(this)
+        listOf(.25f,.5f,1f,2f,4f).forEach { rate -> rates.addView(button("$rate×") { graph.setUniformSpeed(rate) },LinearLayout.LayoutParams(0,dp(44),1f).apply { marginEnd=dp(4) }) }
+        body.addView(rates)
+        body.addView(summary)
+        body.addView(button("Preview speed") { savedPosition=if(entireTimeline) 0 else state.clips.take(state.active).sumOf { ClipEdits.duration(it) };playAfterRefresh=true;refreshPreview() },LinearLayout.LayoutParams(-1,dp(48)))
         val actions=LinearLayout(this)
         actions.addView(button("Add dot") { graph.addDot() },LinearLayout.LayoutParams(0,dp(48),1f))
         actions.addView(button("Remove dot") { graph.removeDot() },LinearLayout.LayoutParams(0,dp(48),1f))
@@ -1108,7 +1154,8 @@ class EditorActivity : BaseActivity() {
         header.addView(button("←") { panelBack() }.apply { contentDescription="Back to tools"; background=null },LinearLayout.LayoutParams(dp(44),dp(44)))
         header.addView(label(page.title,14f).apply { maxLines=1; ellipsize=android.text.TextUtils.TruncateAt.END },LinearLayout.LayoutParams(0,-2,1f))
         resetFor(page.title)?.let { reset -> header.addView(button("None") { history.endGroup(); page.onExit=null; playAfterRefresh=false; reset(); if(page.title !in listOf("Filters","Effects","Font","Style","Color","Text animation","Canvas ratio","Rotate","Flip","Adjust","Playback speed","Stickers")) closePanel() else clearPresetHighlights(page.body) }.apply { contentDescription="None: ${page.title}"; setTextColor(green); background=null },LinearLayout.LayoutParams(dp(48),dp(44))) }
-        toolPanel.addView(header,LinearLayout.LayoutParams(-1,dp(44)))
+        header.addView(StudioDesign.button(this,"Done",primary=true) { closePanel();saveDraft() }.apply { contentDescription="Done: ${page.title}" },LinearLayout.LayoutParams(dp(64),dp(44)))
+        toolPanel.addView(header,LinearLayout.LayoutParams(-1,dp(48)))
         (page.body.parent as? ViewGroup)?.removeView(page.body)
         toolPanel.addView(ScrollView(this).apply { addView(page.body); isFillViewport=false },LinearLayout.LayoutParams(-1,0,1f))
         Ui.style(toolPanel); resizeWorkbench()

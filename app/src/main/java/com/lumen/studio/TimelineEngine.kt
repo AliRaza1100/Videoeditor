@@ -80,7 +80,12 @@ object TimelineEngine {
                     override fun getSpeed(timeUs: Long) = ClipEdits.speedAt(c,(timeUs/20000*20000)/1000.0/ClipEdits.sourceLength(c))
                     override fun getNextSpeedChangeTimeUs(timeUs: Long): Long = if(c.speedCurve.orEmpty().size>1 && timeUs+20000 < ClipEdits.sourceLength(c)*1000) (timeUs/20000+1)*20000 else C.TIME_UNSET
                 }
-                if(!c.muted && c.hasAudio==true) audioEffects.add(if(c.speedCurve.orEmpty().size>1) SpeedChangingAudioProcessor(speed) else androidx.media3.common.audio.SonicAudioProcessor().apply { setSpeed(c.speed); setPitch(1f) }); videoEffects.add(0,TimestampAdjustment({ inputUs, consumer -> consumer.onTimestamp((ClipEdits.outputPosition(c,inputUs/1000.0)*1000).toLong()) },speed))
+                // The linked pair derives video timestamps from processed audio, preserving A/V sync.
+                // Silent clips use the native offset-aware timestamp effect instead.
+                if(!c.muted && c.hasAudio==true) {
+                    val linked=Effects.createExperimentalSpeedChangingEffect(speed)
+                    audioEffects.add(linked.first);videoEffects.add(0,linked.second)
+                } else videoEffects.add(0,SpeedChangeEffect(speed))
             }
             if(!c.muted && c.hasAudio==true) audioEffects.add(GainProcessor(c.audioVolume,c.audioFadeInMs,c.audioFadeOutMs,ClipEdits.duration(c)))
             EditedMediaItem.Builder(media.build()).setDurationUs((if(c.video) c.sourceDurationMs else c.imageDurationMs)*1000)
@@ -170,6 +175,8 @@ object TimelineEngine {
                 return output
             }
         })
+        val sharpness=c.catalogAdjustments.orEmpty()["video.sharpness"] ?: 0f
+        if(sharpness>0f) list.add(com.lumen.studio.graphics.VideoSharpness.effect(context,sharpness))
         if(c.cropLeft>-1f || c.cropRight<1f || c.cropBottom>-1f || c.cropTop<1f) list.add(Crop(c.cropLeft,c.cropRight,c.cropBottom,c.cropTop))
         list.add(ScaleAndRotateTransformation.Builder().setRotationDegrees(-c.rotation)
             .setScale(c.zoom*if(c.flip) -1f else 1f,c.zoom*if(c.flipVertical) -1f else 1f).build())

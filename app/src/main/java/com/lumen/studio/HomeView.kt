@@ -12,8 +12,8 @@ import android.widget.*
 /** Reference-led home: direct imports, real local thumbnails, and compact navigation. */
 class HomeView(context: Context,private val onAction: (String)->Unit = {}): LinearLayout(context) {
     private fun dp(n: Int)=Ui.dp(context,n)
-    private val lime=when(AppPreferences.theme(context)) { "gold" -> StudioDesign.primary(context); "violet" -> 0xFFDDCFFF.toInt(); else -> 0xFFB6FF4D.toInt() }
-    private val accent=when(AppPreferences.theme(context)) { "gold","violet" -> StudioDesign.accent(context); "light" -> 0xFF365F00.toInt(); else -> lime }
+    private val lime=when(AppPreferences.theme(context)) { "gold" -> StudioDesign.primary(context); "violet" -> 0xFFDDCFFF.toInt(); "dark" -> 0xFF00BCD4.toInt(); else -> StudioDesign.primary(context) }
+    private val accent=when(AppPreferences.theme(context)) { "gold","violet" -> StudioDesign.accent(context); "light" -> StudioDesign.accent(context); else -> lime }
     private fun label(value: String,size: Float,bold: Boolean=false)=StudioDesign.label(context,value,size,bold=bold)
     private fun icon(resource: Int,color: Int)=ImageView(context).apply {
         setImageResource(resource); imageTintList=ColorStateList.valueOf(color)
@@ -32,12 +32,12 @@ class HomeView(context: Context,private val onAction: (String)->Unit = {}): Line
             background=StudioDesign.shape(context,lime,18); setPadding(dp(16),dp(16),dp(16),dp(16))
             isFocusable=true; contentDescription="New Video Project"; setOnClickListener { onAction("new_video") }
         }
-        hero.addView(TextView(context).apply { text="⊕"; textSize=28f; setTextColor(0xFF101410.toInt()); gravity=Gravity.CENTER; importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO },LayoutParams(dp(32),dp(40)))
+        hero.addView(icon(R.drawable.ic_project_add,0xFF101410.toInt()),LayoutParams(dp(28),dp(28)))
         val heroCopy=LinearLayout(context).apply { orientation=VERTICAL; setPadding(dp(12),0,dp(8),0) }
         heroCopy.addView(label("New Project",21f,true).apply { setTextColor(0xFF101410.toInt()) })
         heroCopy.addView(label("Start editing your videos and photos",12f).apply { setTextColor(0xFF223016.toInt()); setPadding(0,dp(6),0,0) })
         hero.addView(heroCopy,LayoutParams(0,-2,1f))
-        hero.addView(TextView(context).apply { text="↗"; textSize=22f; setTextColor(0xFF101410.toInt()); gravity=Gravity.CENTER; importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO },LayoutParams(dp(24),dp(40)))
+        hero.addView(icon(R.drawable.ph_arrow_right,0xFF101410.toInt()),LayoutParams(dp(24),dp(24)))
         content.addView(hero,LayoutParams(-1,-2))
         val editors=LinearLayout(context)
         fun editor(title: String,description: String,resource: Int,action: String)=LinearLayout(context).apply {
@@ -48,7 +48,7 @@ class HomeView(context: Context,private val onAction: (String)->Unit = {}): Line
             addView(icon(resource,accent),LayoutParams(dp(24),dp(24)))
             addView(label(title,14f,true).apply { gravity=Gravity.CENTER; setPadding(0,dp(8),0,0) })
         }
-        editors.addView(editor("Video Editor","Video Editor",android.R.drawable.presence_video_online,"new_video"),LayoutParams(0,-1,1f).apply { marginEnd=dp(6) })
+        editors.addView(editor("Video Editor","Video Editor",R.drawable.ic_video_file,"new_video"),LayoutParams(0,-1,1f).apply { marginEnd=dp(6) })
         editors.addView(editor("Photo Editor","Edit Photo. Crop, text & filters",R.drawable.ph_image,"edit_photo"),LayoutParams(0,-1,1f).apply { marginStart=dp(6) })
         content.addView(editors,LayoutParams(-1,dp(88)).apply { topMargin=dp(12) })
         val recent=LinearLayout(context).apply { gravity=Gravity.CENTER_VERTICAL }
@@ -92,7 +92,12 @@ class HomeView(context: Context,private val onAction: (String)->Unit = {}): Line
         all.addView(label("All Projects",15f,true).apply { setPadding(dp(12),0,0,0) },LayoutParams(0,-2,1f))
         all.addView(label("›",26f),LayoutParams(dp(24),dp(36)))
         content.addView(all,LayoutParams(-1,-2).apply { topMargin=dp(12) })
-        addView(ScrollView(context).apply { isFillViewport=true; isVerticalScrollBarEnabled=false; addView(content) },LayoutParams(-1,0,1f))
+        val feed=LinearLayout(context).apply {
+            orientation=VERTICAL
+            addView(HomeEditingHero(context),LayoutParams(-1,-2))
+            addView(content,LayoutParams(-1,-2))
+        }
+        addView(ScrollView(context).apply { isFillViewport=true; isVerticalScrollBarEnabled=false; addView(feed) },LayoutParams(-1,0,1f))
         addView(View(context).apply { setBackgroundColor(StudioDesign.border(context)) },LayoutParams(-1,dp(1)))
         addView(AdBannerSlot(context,"home_banner"),LayoutParams(-1,-2))
         addView(BottomNavigation(context,"home",onAction,homeAccent=accent))

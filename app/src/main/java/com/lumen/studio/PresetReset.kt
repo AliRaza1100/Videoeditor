@@ -5,7 +5,7 @@ object PresetReset {
     fun clip(kind: String,c: EditorClip): EditorClip = when(kind) {
         "Filters" -> c.copy(filter="Original",filterIntensity=1f)
         "Effects" -> c.copy(effect="None")
-        "Adjust" -> c.copy(brightness=0f,contrast=1f,saturation=1f,exposure=0f,temperature=0f,tint=0f)
+        "Adjust" -> c.copy(brightness=0f,contrast=1f,saturation=1f,exposure=0f,temperature=0f,tint=0f,catalogAdjustments=c.catalogAdjustments?.filterKeys { !it.startsWith("video.") })
         "Brightness" -> c.copy(brightness=0f)
         "Contrast" -> c.copy(contrast=1f)
         "Saturation" -> c.copy(saturation=1f)
@@ -13,7 +13,7 @@ object PresetReset {
         "Temperature" -> c.copy(temperature=0f)
         "Tint" -> c.copy(tint=0f)
         "Playback speed","Playback speed (%)","Curve speed" -> c.copy(speed=1f,speedCurve=emptyList(),speedPositions=null)
-        "Crop" -> c.copy(cropLeft=-1f,cropRight=1f,cropTop=1f,cropBottom=-1f,zoom=1f)
+        "Crop" -> c.copy(cropLeft=-1f,cropRight=1f,cropTop=1f,cropBottom=-1f,zoom=1f,cropRatio=null)
         "Image duration (seconds)" -> c.copy(imageDurationMs=4000,curveImageDurationMs=null)
         "Fade in (seconds)" -> c.copy(audioFadeInMs=0)
         "Fade out (seconds)" -> c.copy(audioFadeOutMs=0)

@@ -153,7 +153,7 @@ class MediaPickerActivity: BaseActivity() {
         if(loading || selected.isEmpty()) return
         val valid=selected.all { item -> runCatching { contentResolver.openFileDescriptor(Uri.parse(item.uri),"r")?.use { true } ?: false }.getOrDefault(false) }
         if(!valid) { status.text=Ui.t(this,"A selected file is no longer available. Remove it and choose it again."); return }
-        setResult(Activity.RESULT_OK,Intent().putStringArrayListExtra("uris",ArrayList(selected.map { it.uri })).putStringArrayListExtra("names",ArrayList(selected.map { it.name })).putExtra("mode",mode)); finish()
+        setResult(Activity.RESULT_OK,Intent().putStringArrayListExtra("uris",ArrayList(selected.map { it.uri })).putStringArrayListExtra("names",ArrayList(selected.map { it.name })).putExtra("videos",selected.map { it.video }.toBooleanArray()).putExtra("mode",mode)); finish()
     }
     override fun onSaveInstanceState(out: Bundle) {
         out.putString("mode",mode); out.putBoolean("picker_open",pickerOpen); out.putStringArrayList("uris",ArrayList(selected.map { it.uri })); out.putStringArrayList("names",ArrayList(selected.map { it.name })); out.putBooleanArray("videos",selected.map { it.video }.toBooleanArray()); super.onSaveInstanceState(out)

@@ -28,13 +28,13 @@ private class ToolGlyph(context: Context,private val name: String) : View(contex
         when(name) {
             "Back" -> { line(20f,12f,4f,12f); line(4f,12f,10f,6f); line(4f,12f,10f,18f) }
             "Audio","Sound","Volume" -> { line(4f,10f,4f,14f); line(9f,6f,9f,18f); line(14f,9f,14f,15f); line(19f,4f,19f,20f) }
-            "Delete","Delete text" -> { canvas.drawRect(6f,7f,18f,21f,ink); line(4f,4f,20f,4f); line(9f,2f,15f,2f); line(10f,10f,10f,18f); line(14f,10f,14f,18f) }
+            "Delete","Delete text","Remove photo" -> { canvas.drawRect(6f,7f,18f,21f,ink); line(4f,4f,20f,4f); line(9f,2f,15f,2f); line(10f,10f,10f,18f); line(14f,10f,14f,18f) }
             "Text","Edit Text","Edit text","Font","Style" -> { line(4f,4f,20f,4f); line(12f,4f,12f,20f); line(8f,20f,16f,20f) }
             "Split" -> { canvas.drawRect(3f,5f,9f,19f,ink); canvas.drawRect(15f,5f,21f,19f,ink); line(12f,2f,12f,22f) }
             "Trim","Crop","Canvas" -> { line(5f,2f,5f,19f); line(5f,19f,22f,19f); line(2f,5f,19f,5f); line(19f,5f,19f,22f) }
             "Duplicate","Replace" -> { canvas.drawRect(7f,7f,21f,21f,ink); line(3f,17f,3f,3f); line(3f,3f,17f,3f) }
             "Filters","Adjust","Color","Text background" -> { line(5f,3f,5f,21f); line(12f,3f,12f,21f); line(19f,3f,19f,21f); canvas.drawCircle(5f,8f,2f,ink); canvas.drawCircle(12f,16f,2f,ink); canvas.drawCircle(19f,10f,2f,ink) }
-            "Photos","Collage" -> { canvas.drawRoundRect(3f,3f,21f,21f,2f,2f,ink); line(12f,3f,12f,21f); line(3f,12f,21f,12f) }
+            "Photos","Add photos","Collage" -> { canvas.drawRoundRect(3f,3f,21f,21f,2f,2f,ink); line(12f,3f,12f,21f); line(3f,12f,21f,12f) }
             "Done" -> { line(4f,12f,10f,18f); line(10f,18f,21f,5f) }
             "Stickers" -> { canvas.drawCircle(12f,12f,9f,ink); canvas.drawCircle(8f,9f,.7f,ink); canvas.drawCircle(16f,9f,.7f,ink); canvas.drawArc(RectF(7f,10f,17f,18f),0f,180f,false,ink) }
             "Speed","Duration" -> { canvas.drawCircle(12f,12f,9f,ink); line(12f,12f,16f,7f); line(12f,12f,7f,12f) }

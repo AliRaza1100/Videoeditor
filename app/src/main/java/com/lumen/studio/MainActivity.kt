@@ -56,7 +56,8 @@ class MainActivity : BaseActivity() {
                 if(!TermsConsent.accepted(this)) return@OnboardingView
                 if (page < OnboardingView.PAGE_COUNT-1) { page++; showOnboarding() } else completeOnboarding()
             },
-            onSkip = { completeOnboarding() }))
+            onSkip = { completeOnboarding() },
+            onBack = if(preferences.getLong("completed_version",-1)>0 && TermsConsent.accepted(this)) ({ tab="settings"; showEditor() }) else null))
     }
 
     private fun completeOnboarding() {
@@ -123,8 +124,11 @@ class MainActivity : BaseActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if ((requestCode == 100 || requestCode == 101) && resultCode == RESULT_OK) {
             val uris = data?.getStringArrayListExtra("uris") ?: return
-            if(requestCode==101 && uris.isNotEmpty()) AdminConnection.event(applicationContext,"image_edit_started")
-            startActivity(Intent(this, if(requestCode==101) PhotoEditorActivity::class.java else EditorActivity::class.java)
+            if(uris.isEmpty()) return
+            val types=data.getBooleanArrayExtra("videos")
+            val photosOnly=if(types?.size==uris.size) types.none { it } else uris.none { TimelineEngine.isVideo(this,it) }
+            if(photosOnly) AdminConnection.event(applicationContext,"image_edit_started")
+            startActivity(Intent(this, if(photosOnly) PhotoEditorActivity::class.java else EditorActivity::class.java)
                 .putStringArrayListExtra("uris", uris)
                 .putStringArrayListExtra("names", data.getStringArrayListExtra("names")))
         }

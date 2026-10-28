@@ -1,0 +1,13 @@
+✔ complete protected admin / anonymous installation workflow (644.4261ms)
+✔ network plans are validated, versioned and never activate SDKs (188.0031ms)
+✔ partner routing round-trip, receipt authentication and rollback (265.9511ms)
+✔ export rules and backup network validation (88.6835ms)
+✔ production origin is pinned behind the proxy (357.7889ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2793.9286

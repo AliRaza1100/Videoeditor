@@ -7,10 +7,11 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 
 /** Four photographic introductions with accessible native controls. */
-class OnboardingView(context: Context, page: Int, onNext: () -> Unit, onSkip: () -> Unit): LinearLayout(context) {
+class OnboardingView(context: Context, page: Int, onNext: () -> Unit, onSkip: () -> Unit,onBack: (() -> Unit)?=null): LinearLayout(context) {
     companion object { const val PAGE_COUNT=4 }
     init {
         orientation=VERTICAL; setBackgroundColor(StudioDesign.background(context))
+        if(onBack!=null) addView(StudioDesign.toolbar(context,"App introduction",onBack))
         val index=page.coerceIn(0,PAGE_COUNT-1)
         val titles=listOf("Advanced Filter\nEffects","Get Creative\nEffects","Explore Artistic\nBackgrounds","Add Multiple\nSoundtracks")
         val descriptions=listOf("Find your look with expressive color and filters.","Give your photos and videos a fresh creative touch.","Create photo collages with unique layouts and canvas colors.","Layer music and extracted audio to bring your story to life.")
@@ -48,7 +49,7 @@ class OnboardingView(context: Context, page: Int, onNext: () -> Unit, onSkip: ()
         copy.addView(next,LayoutParams(-1,Ui.dp(context,56)))
         if(index<PAGE_COUNT-1) copy.addView(skip,LayoutParams(-1,Ui.dp(context,48)).apply { topMargin=Ui.dp(context,6) })
         enableActions(); body.addView(copy,LayoutParams(-1,-2))
-        addView(ScrollView(context).apply { isFillViewport=true; isVerticalScrollBarEnabled=false; addView(body) },LayoutParams(-1,-1))
+        addView(ScrollView(context).apply { isFillViewport=true; isVerticalScrollBarEnabled=false; addView(body) },LayoutParams(-1,0,1f))
     }
 }
 

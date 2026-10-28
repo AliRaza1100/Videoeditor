@@ -18,6 +18,10 @@ class SpeedCurveView(context: Context,clip: EditorClip,private val changed: (Lis
     private fun x(i: Int)=pad+points[i]*(width-2*pad)
     private fun y(speed: Float)=pad+(ln(4f/speed)/ln(16f))*(height-2*pad)
     init { contentDescription="Speed curve. Tap to add a dot; drag dots to change time and speed; hold a dot to remove it."; isClickable=true; minimumHeight=Ui.dp(context,170) }
+    fun setUniformSpeed(value: Float) {
+        points.clear();points.addAll(listOf(0f,1f));speeds.clear();speeds.addAll(listOf(value.coerceIn(.25f,4f),value.coerceIn(.25f,4f)))
+        selected=-1;changed(points.toList(),speeds.toList());invalidate()
+    }
     fun addDot() {
         if(points.size>=64) return
         val at=(if(selected<0) 0 else selected).coerceAtMost(points.lastIndex-1)

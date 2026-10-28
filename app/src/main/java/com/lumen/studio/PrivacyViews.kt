@@ -16,9 +16,7 @@ import java.util.concurrent.Executors
 class PrivacyPolicyView(private val activity: Activity,navigate: (String)->Unit): LinearLayout(activity) {
     init {
         orientation=VERTICAL; setBackgroundColor(StudioDesign.background(activity)); val dp={ n: Int -> Ui.dp(activity,n) }
-        val header=LinearLayout(activity).apply { gravity=Gravity.CENTER_VERTICAL; setPadding(dp(12),dp(12),dp(20),dp(8)) }
-        header.addView(StudioDesign.button(activity,"←") { navigate("settings") }.apply { background=null; contentDescription="Back" },LayoutParams(dp(48),dp(48)))
-        header.addView(StudioDesign.label(activity,"Privacy policy",24f,bold=true),LayoutParams(0,-2,1f)); addView(header)
+        addView(StudioDesign.toolbar(activity,"Privacy policy") { navigate("settings") })
         val body=LinearLayout(activity).apply { orientation=VERTICAL; setPadding(dp(24),dp(12),dp(24),dp(28)) }
         fun paragraph(value: String,heading: Boolean=false) { body.addView(StudioDesign.label(activity,value,if(heading) 18f else 14f,secondary=!heading,bold=heading).apply { setTextIsSelectable(true); if(heading && android.os.Build.VERSION.SDK_INT>=28) isAccessibilityHeading=true },LayoutParams(-1,-2).apply { topMargin=dp(if(heading) 24 else 10) }) }
         if(BuildConfig.POLICY_PLACEHOLDER) paragraph("Test policy: the developer name and contact below are examples, not a published privacy notice.")

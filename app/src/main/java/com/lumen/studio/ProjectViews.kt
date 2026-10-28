@@ -61,6 +61,7 @@ class ProjectRow(context: Context,private val project: SavedProject,private val 
         val image=ImageView(context).apply { tag="media"; scaleType=ImageView.ScaleType.CENTER_CROP; setBackgroundColor(0xFF282F34.toInt()) }
         thumb.addView(image,FrameLayout.LayoutParams(-1,-1))
         project.state.clips.firstOrNull()?.let { PreviewImages.load(context,it.uri,it.video,image) }
+        thumb.addView(ImageView(context).apply { tag="media"; setImageResource(if(project.state.photoEditor==true) R.drawable.ph_image else R.drawable.ic_video_file); imageTintList=ColorStateList.valueOf(Color.WHITE); setPadding(dp(6),dp(6),dp(6),dp(6)); background=StudioDesign.shape(context,0xBB101018.toInt(),8); contentDescription=Ui.t(context,if(project.state.photoEditor==true) "Photo project" else "Video project") },FrameLayout.LayoutParams(dp(36),dp(36),Gravity.TOP or Gravity.START).apply { setMargins(dp(5),dp(5),dp(5),dp(5)) })
         val type=if(project.state.photoEditor==true) "Photo" else "Video"
         thumb.addView(TextView(context).apply { tag="media"; text=type; textSize=10f; setTextColor(Color.WHITE); setPadding(dp(5),dp(3),dp(5),dp(3)); setBackgroundColor(0xCC101018.toInt()) },FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM or Gravity.START))
         val more=studioIcon(context,android.R.drawable.ic_menu_more,"Project options: $name") {
@@ -107,7 +108,7 @@ class BottomNavigation(context: Context,selected: String,navigate: (String)->Uni
             val selectedColor=homeAccent ?: StudioDesign.accent(context)
             val item=LinearLayout(context).apply {
                 orientation=VERTICAL;gravity=Gravity.CENTER;isSelected=active;isFocusable=true;contentDescription=Ui.t(context,name);setOnClickListener { navigate(key) }
-                if(active && homeAccent==null) background=StudioDesign.shape(context,if(AppPreferences.theme(context)=="gold") Color.rgb(255,247,229) else StudioDesign.raised(context),20)
+                if(active) background=StudioDesign.shape(context,if(AppPreferences.theme(context)=="gold") Color.rgb(255,247,229) else StudioDesign.raised(context),20)
             }
             item.addView(ImageView(context).apply { setImageResource(icon); imageTintList=ColorStateList.valueOf(if(active) selectedColor else StudioDesign.muted(context)); importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO },LayoutParams(Ui.dp(context,22),Ui.dp(context,22)))
             item.addView(StudioDesign.label(context,name,11f,bold=active).apply { gravity=Gravity.CENTER; if(homeAccent!=null) { tag="media"; setTextColor(if(active) selectedColor else StudioDesign.muted(context)) }; setPadding(0,Ui.dp(context,5),0,0) })

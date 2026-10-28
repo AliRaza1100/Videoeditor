@@ -53,6 +53,27 @@ class PhotoWorkspaceTest: InstrumentationTestCase() {
             val reopened=ProjectStore.load(context,id)!!; assertEquals(true,reopened.state.photoEditor); assertEquals("single",reopened.state.photoLayout)
         } finally { ProjectStore.delete(context,id); photo.delete() }
     }
+    fun testCombinedTextFormattingSurvivesDraftAndChangesRenderedPixels() {
+        val id="photo-format-${UUID.randomUUID()}"
+        val layer=TextLayer(text="Studio",font="Sans",style="Regular",size=48f,color=Color.WHITE,shadow=false,bold=true,italic=true,underline=true,backgroundColor=Color.BLUE,alignment="Right")
+        val draft=SavedProject(id,"Text formatting",System.currentTimeMillis(),EditorState(emptyList(),photoEditor=true,projectTexts=listOf(layer)))
+        try {
+            ProjectStore.save(context,draft)
+            val restored=ProjectStore.load(context,id)!!.state.projectTexts!!.single()
+            assertEquals(layer,restored)
+            fun pixels(text: TextLayer): Bitmap=Bitmap.createBitmap(360,240,Bitmap.Config.ARGB_8888).also { TextPresets.draw(android.graphics.Canvas(it),text,360,240,750) }
+            val formatted=pixels(restored)
+            val plain=pixels(restored.copy(bold=false,italic=false,underline=false))
+            val withoutUnderline=pixels(restored.copy(underline=false))
+            try {
+                assertFalse("Combined styling must affect exported pixels",formatted.sameAs(plain))
+                assertFalse("Underline must work together with bold and italic",formatted.sameAs(withoutUnderline))
+                assertTrue("Text highlight must render",(0 until formatted.width).any { x -> (0 until formatted.height).any { y -> formatted.getPixel(x,y)==Color.BLUE } })
+                val bounds=PhotoTextGeometry.bounds(360,240,restored)
+                assertTrue(bounds.width()>0 && bounds.height()>0)
+            } finally { formatted.recycle();plain.recycle();withoutUnderline.recycle() }
+        } finally { ProjectStore.delete(context,id) }
+    }
     fun testFreeCropKeepsFiniteBounds() {
         instrumentation.runOnMainSync {
             val bitmap=Bitmap.createBitmap(320,240,Bitmap.Config.ARGB_8888)
